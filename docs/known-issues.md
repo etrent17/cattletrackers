@@ -23,9 +23,6 @@ The API exists; there is no interface.
 A failed delete request raises an unhandled error.
 
 
-### 13. No automated tests
-`npm test` prints an error and exits.
-
 ## Resolved
 
 - `getStatistics()` was missing from `CattleService`. Added in `e8d97e1`.
@@ -37,6 +34,7 @@ A failed delete request raises an unhandled error.
 - **12. Calving-month statistic mixed date handling.** Dates are parsed as local calendar dates (`parseLocalDate`). Fixed on `feature/fix-core-views` (`7a983c5`), verified with browser time zones either side of UTC.
 - (10) Docker setup omitted some settings: compose did not pass `DEMO_MODE` or `COOKIE_SECURE`, and `install.sh` overwrote the Docker files on each run. The Docker files are now committed, `install.sh` only creates `.env` and runs Compose, and Compose passes `DEMO_MODE`, `COOKIE_SECURE`, and `HSTS`. Fixed on `feature/deploy-hardening` (compose validated with `docker compose config`; not run under a Docker daemon).
 - (11) Health check ignored the database: `/api/health` now runs `SELECT 1` and returns 503 when PostgreSQL is unreachable. Fixed on `feature/deploy-hardening`.
+- (13) No automated tests: `npm test` now runs unit and API tests against PostgreSQL, `npm run test:e2e` runs a browser smoke test, and GitHub Actions runs both on every push and pull request. Added on `feature/automated-tests`; the workflow passed on GitHub for the branch push (run 44942939463).
 
 ## Note on login graphics
 

@@ -11,12 +11,17 @@ const router = express.Router();
 const DEMO_SESSION_MS = 4 * 60 * 60 * 1000;
 const demoEnabled = () => process.env.DEMO_MODE === 'true';
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
+// Test-only switch, read once at startup: RATE_LIMIT_DISABLED=true turns both limiters off so the
+// test suite can sign in more than 20 times. Never set it on a real deployment.
+const skipLimit = process.env.RATE_LIMIT_DISABLED === 'true' ? () => true : () => false;
+
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false, skip: skipLimit });
 const demoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipLimit,
   message: { error: 'Too many demo sessions from your network. Please try again later.' },
 });
 

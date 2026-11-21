@@ -3,7 +3,8 @@
 ## Layout
 
 ```
-server.js            Express app, security headers, sessions, routing
+server.js            entry point: checks settings, prepares the database, listens
+app.js               Express app (no listening): security headers, sessions, routing
 db.js                PostgreSQL pool, schema creation, demo cleanup
 routes/              auth.js, cattle.js, users.js
 middleware/auth.js   requireAuth, requireAdmin, validate
@@ -16,6 +17,8 @@ src/                 browser ES modules
   services/          CattleService (API calls and statistics)
   views/             DashboardView, ListView, FormView
   models/ utils/     Cattle model, validators, date helpers, escapeHtml
+test/                unit tests (unit/), API tests (api/), shared setup (helpers/)
+e2e/                 browser smoke test (Playwright)
 ```
 
 ## Request flow

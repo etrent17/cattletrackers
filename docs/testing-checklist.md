@@ -2,6 +2,15 @@
 
 Manual acceptance tests. Tick a box only after running the step. Record the commit and date beside any failure.
 
+## Automated tests
+
+Many of the checks below are also covered by automated tests; run them before working through the manual list.
+
+- `npm test`: unit tests (validators, date helpers, statistics, search) and API tests (setup, login and logout, cattle create/read/update/delete, duplicate cow numbers, validation, owner isolation, admin-only users API, rate limit). Needs `TEST_DATABASE_URL` pointing at a database that can be wiped.
+- `npm run test:e2e`: browser smoke test (set up, sign out, sign in, add a cow, see it on the dashboard and list, reload, delete it).
+
+See "Running the tests" in the [README](../README.md). The automated tests do not cover demo-mode screens, edit and view dialogs, search and filters in the browser, the secondary views, phone layout, or offline behavior.
+
 ## Accounts
 - [ ] Fresh install shows the setup form; admin account is created
 - [ ] Setup is refused once a user exists
