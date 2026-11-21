@@ -201,4 +201,5 @@ router.delete('/:id', treatmentId, validate, async (req, res) => {
   res.json({ ok: true });
 });
 
-module.exports = { forCattle, router, TYPES };
+// SUPERSEDED is shared with routes/reports.js so both use one definition of an open follow-up.
+module.exports = { forCattle, router, TYPES, SUPERSEDED };

@@ -12,7 +12,7 @@ Describes the interface as coded at commit `7fb8152`. Several screens are affect
 
 ## Navigating
 
-The left sidebar switches views: Dashboard, Cattle Records, Calving Records, Weights, Medical Records, Breeding History, Financial Records, three report pages, System Settings, and User Management. Only the selected view is shown.
+The left sidebar switches views: Dashboard, Cattle Records, Calving Records, Weights, Medical Records, Breeding History, Financial Records, three report pages (Performance, Health, Financial), System Settings, and User Management. Only the selected view is shown.
 
 ## Adding a cow (untested)
 
@@ -138,6 +138,38 @@ Open **Financial Reports** under Reports and pick a period, as on the records pa
 | By category | Totals per category for income and for expenses, with each category's share |
 
 All amounts are added exactly, to the cent.
+
+## Performance reports
+
+Open **Performance Reports** under Reports. Pick a period as on the financial pages (Last 12 months to begin with); the period is shared with Health Reports. The page shows:
+
+| Figure | Meaning |
+|---|---|
+| Herd size now | The animals on record today, with how many are female and male |
+| Herd size over time | A chart and table of the herd at the end of each month of the period. An animal counts from the day its record was created, and animals you have deleted are not counted in any month |
+| Calvings | The calvings recorded in the period, split into alive and stillborn and by calving ease |
+| Calving rate | The cows that calved in the period as a share of your breeding-age females: animals not marked male that have calved before, or females aged 15 months or more (a female with no birth date counts) |
+| Calving interval | The average number of days between a cow's previous calving and her calving in the period |
+| Daily gain | For each animal weighed on two or more days in the period: the weight change from its first to its last weighing, divided by the days between. Also averaged for females, males and the whole herd |
+| Conception rate | Of the breedings in the period that were followed by a pregnant or open check, the share found pregnant |
+
+A figure shows "—" when there is nothing to measure it from, for example a calving interval when no cow has calved twice. The notes at the foot of the page repeat these definitions.
+
+## Health reports
+
+Open **Health Reports** under Reports. The cards and the first two tables cover the chosen period:
+
+- **Treatments by type** and **by month**: how many treatments, vaccinations, vet visits and other medical records were dated in the period, and how many animals they involved.
+
+The other three tables show the herd as it is today, whatever the period:
+
+- **Under treatment or in quarantine**: animals with that status, their current medications and their newest medical record.
+- **In a withdrawal period**: animals whose withdrawal date is today or later, the one ending first at the top.
+- **Overdue and upcoming follow-ups**: treatments whose next due date has passed, or falls within 30 days, and that no later treatment has replaced.
+
+## Exporting and printing a report
+
+Each table on the Performance and Health pages has an **Export CSV** button; the file holds the same rows as the table and opens in a spreadsheet. **Print** prints the page without the menu, the filter and the buttons, with the period written at the top.
 
 ## Demo accounts
 

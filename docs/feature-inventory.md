@@ -46,8 +46,8 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 
 | Feature | Where | Status | Notes |
 |---|---|---|---|
-| Performance reports | nav item `reports` | Placeholder | Shows three herd statistics |
-| Health reports | nav item `health-reports` | Placeholder | Same content |
+| Performance reports | nav item `reports`, `ReportsController` | Implemented | Herd size over time, calvings, calving rate and interval, daily gain by animal and group, conception rate for a period (`GET /api/reports/performance`); CSV export per table, print layout |
+| Health reports | nav item `health-reports`, `ReportsController` | Implemented | Treatments by type and month for a period; animals under treatment, in quarantine or in withdrawal, and overdue and upcoming follow-ups today (`GET /api/reports/health`); CSV export per table, print layout |
 | Financial reports | nav item `financial-reports`, `FinanceController` | Implemented | Income, expenses, net, cost per head, by month and by category for a period (`GET /api/transactions/summary`) |
 | Financial records | nav item `finance`, `routes/transactions.js` | Implemented | Add/edit/delete, period and animal filters, CSV export; cow details dialog lists an animal's transactions |
 | System settings | nav item `settings`, `SettingsView.js` | Implemented | Shows email, role, and demo status; change-password form (not for demo accounts); describes offline behaviour |
