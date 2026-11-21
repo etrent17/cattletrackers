@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CattleTrack - Livestock Management System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <nav class="navbar navbar-dark bg-dark px-3">
+    <span class="navbar-brand mb-0 h1">CattleTrack</span>
+    <div class="d-flex align-items-center gap-3 text-light">
+      <span><span id="online-status" class="status-indicator online"></span> <span id="status-text">Online</span></span>
+      <button id="logout-btn" type="button" class="btn btn-outline-light btn-sm">Sign out</button>
+    </div>
+  </nav>
+
+  <div class="container-fluid">
+    <div class="row">
+      <aside class="col-md-3 col-lg-2 bg-light py-3 min-vh-100">
+        <h6 class="text-muted">CATTLE MANAGEMENT</h6>
+        <ul class="nav flex-column mb-3">
+          <li><a class="nav-link" href="#" data-view="dashboard">Dashboard</a></li>
+          <li><a class="nav-link" href="#" data-view="cattle">Cattle Records</a></li>
+          <li><a class="nav-link" href="#" data-view="calving">Calving Records</a></li>
+          <li><a class="nav-link" href="#" data-view="medical">Medical Records</a></li>
+          <li><a class="nav-link" href="#" data-view="breeding">Breeding History</a></li>
+        </ul>
+        <h6 class="text-muted">REPORTS</h6>
+        <ul class="nav flex-column mb-3">
+          <li><a class="nav-link" href="#" data-view="reports">Performance Reports</a></li>
+          <li><a class="nav-link" href="#" data-view="health-reports">Health Reports</a></li>
+          <li><a class="nav-link" href="#" data-view="financial-reports">Financial Reports</a></li>
+        </ul>
+        <h6 class="text-muted">SETTINGS</h6>
+        <ul class="nav flex-column">
+          <li><a class="nav-link" href="#" data-view="settings">System Settings</a></li>
+          <li><a class="nav-link" href="#" data-view="users">User Management</a></li>
+        </ul>
+      </aside>
+
+      <main class="col-md-9 col-lg-10 py-4">
+        <section id="view-dashboard" class="app-view active">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h2>Cattle Tracking System</h2>
+              <p class="text-muted mb-0">Comprehensive livestock management solution for your farm</p>
+            </div>
+            <button id="open-add-modal-btn" type="button" class="btn btn-success">Add New Cow</button>
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-total">0</div>Total Cattle</div></div>
+            <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-calving">0</div>Calving This Month</div></div>
+            <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-treatments">0</div>Scheduled Treatments</div></div>
+            <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-healthy">0</div>Healthy Animals</div></div>
+          </div>
+          <h4>Recent Cattle Records</h4>
+          <div class="table-responsive mb-4">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Cow ID</th><th>Name/Breed</th><th>Gender</th><th>Last Calving</th><th>Medications</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="recent-body"></tbody>
+            </table>
+          </div>
+          <h4>Upcoming Events</h4>
+          <ul id="events-list" class="list-group"></ul>
+        </section>
+
+        <section id="view-cattle" class="app-view">
+          <h2 id="list-title">All Cattle Records</h2>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6"><input id="search-cattle" class="form-control" type="search" placeholder="Search cattle"></div>
+            <div class="col-md-3">
+              <select id="filter-status" class="form-select">
+                <option value="all">All Statuses</option>
+                <option value="healthy">Healthy</option>
+                <option value="under_treatment">Under Treatment</option>
+                <option value="quarantine">In Quarantine</option>
+                <option value="pregnant">Pregnant</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Cow ID</th><th>Name/Breed</th><th>Gender</th><th>Birth / Age</th><th>Last / Expected Calving</th><th>Medications</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="list-body"></tbody>
+            </table>
+          </div>
+          <p id="list-empty" class="text-muted" hidden>No records found.</p>
+        </section>
+
+        <section id="view-secondary" class="app-view">
+          <h2 id="secondary-view-title">Overview</h2>
+          <div id="secondary-view-body"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal fade" id="cattleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form id="cattle-form" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cattleModalTitle">Add New Cattle Record</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label" for="f-tag">Cow Number</label><input id="f-tag" class="form-control" required maxlength="25"></div>
+            <div class="col-md-6"><label class="form-label" for="f-name">Name/Breed</label><input id="f-name" class="form-control" maxlength="100"></div>
+            <div class="col-md-4"><label class="form-label" for="f-gender">Gender</label>
+              <select id="f-gender" class="form-select"><option value="">Select Gender</option><option value="female">Female</option><option value="male">Male</option></select></div>
+            <div class="col-md-4"><label class="form-label" for="f-birth">Birth Date</label><input id="f-birth" type="date" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label" for="f-weight">Weight (lbs)</label><input id="f-weight" type="number" min="0" step="0.1" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label" for="f-last-calving">Last Calving Date</label><input id="f-last-calving" type="date" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label" for="f-expected-calving">Expected Calving Date</label><input id="f-expected-calving" type="date" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label" for="f-meds">Current Medications</label><input id="f-meds" class="form-control" maxlength="500"></div>
+            <div class="col-md-6"><label class="form-label" for="f-status">Health Status</label>
+              <select id="f-status" class="form-select">
+                <option value="healthy">Healthy</option><option value="under_treatment">Under Treatment</option>
+                <option value="quarantine">In Quarantine</option><option value="pregnant">Pregnant</option>
+              </select></div>
+            <div class="col-12"><label class="form-label" for="f-notes">Additional Notes</label><textarea id="f-notes" class="form-control" rows="3" maxlength="2000"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="viewCowModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewCowModalTitle">Animal Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="viewCowModalBody"></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification" class="toast-notification" role="status"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

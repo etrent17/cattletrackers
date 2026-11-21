@@ -1,0 +1,16 @@
+*{box-sizing:border-box}
+.login-page{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f7f4ec;font-family:system-ui,sans-serif;color:#1c2b22}
+.card{width:100%;max-width:380px;background:#fff;padding:2rem;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+h1{margin:0 0 .25rem}
+.muted{color:#667}.small{font-size:.8rem;margin:.25rem 0 0}
+label{display:block;margin:1rem 0 .25rem;font-weight:600;font-size:.9rem}
+input{width:100%;padding:.6rem .7rem;border:1px solid #ccc;border-radius:8px;font-size:1rem}
+.pw-row{position:relative}
+.link-btn{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);background:none;border:0;color:#2d6a4f;cursor:pointer}
+.btn{width:100%;padding:.7rem;border:0;border-radius:8px;font-size:1rem;cursor:pointer;margin-top:1.25rem}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn-primary{background:#2d6a4f;color:#fff}
+.btn-demo{background:#e9f5ee;color:#2d6a4f;border:1px solid #2d6a4f;margin-top:1rem}
+.divider{text-align:center;color:#889;font-size:.85rem;margin-top:1rem}
+.error{color:#b00020;min-height:1.2em;margin:1rem 0 0}
+[hidden]{display:none!important}

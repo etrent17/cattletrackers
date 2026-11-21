@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CattleTrack - Sign in</title>
+  <link rel="stylesheet" href="/login.css">
+</head>
+<body class="login-page">
+  <main class="card">
+    <h1>CattleTrack</h1>
+    <p id="subtitle" class="muted">Sign in to manage your herd</p>
+
+    <div id="demo-block" hidden>
+      <button id="demo-btn" type="button" class="btn btn-demo">Try the live demo</button>
+      <div class="divider"><span id="divider-text">or sign in with email</span></div>
+    </div>
+
+    <form id="auth-form" novalidate>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+
+      <label for="password">Password</label>
+      <div class="pw-row">
+        <input id="password" type="password" autocomplete="current-password" required minlength="10">
+        <button id="toggle-password" type="button" class="link-btn">Show</button>
+      </div>
+
+      <div id="confirm-group" hidden>
+        <label for="confirm">Confirm password</label>
+        <input id="confirm" type="password" autocomplete="new-password">
+        <p class="muted small">Use at least 10 characters.</p>
+      </div>
+
+      <button id="submit-btn" type="submit" class="btn btn-primary">Sign in</button>
+    </form>
+
+    <p id="error" class="error" role="alert"></p>
+  </main>
+
+  <script type="module" src="/src/auth.js"></script>
+</body>
+</html>
