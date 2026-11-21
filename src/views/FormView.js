@@ -1,6 +1,6 @@
 export class FormView {
   constructor() {
-    this.modalEl = document.getElementById("addCowModal");
+    this.modalEl = document.getElementById("cattleModal");
     this.modalInstance = this.modalEl ? new bootstrap.Modal(this.modalEl) : null;
     this.form = document.getElementById("cattle-form");
   }
@@ -16,30 +16,30 @@ export class FormView {
 
   getFormData() {
     return {
-      tagNumber: document.getElementById("cow-number").value.trim(),
-      nameBreed: document.getElementById("name-breed").value.trim(),
-      gender: document.getElementById("gender").value,
-      birthDate: document.getElementById("birth-date").value,
-      weight: document.getElementById("weight").value,
-      lastCalvingDate: document.getElementById("last-calving-date").value,
-      expectedCalvingDate: document.getElementById("expected-calving-date").value,
-      medications: document.getElementById("medications").value.trim(),
-      healthStatus: document.getElementById("health-status").value,
-      notes: document.getElementById("notes").value.trim(),
+      tagNumber: document.getElementById("f-tag").value.trim(),
+      nameBreed: document.getElementById("f-name").value.trim(),
+      gender: document.getElementById("f-gender").value,
+      birthDate: document.getElementById("f-birth").value,
+      weight: document.getElementById("f-weight").value,
+      lastCalvingDate: document.getElementById("f-last-calving").value,
+      expectedCalvingDate: document.getElementById("f-expected-calving").value,
+      medications: document.getElementById("f-meds").value.trim(),
+      healthStatus: document.getElementById("f-status").value,
+      notes: document.getElementById("f-notes").value.trim(),
     };
   }
 
   populateForm(cattle) {
-    document.getElementById("cow-number").value = cattle.tagNumber || "";
-    document.getElementById("name-breed").value = cattle.nameBreed || "";
-    document.getElementById("gender").value = cattle.gender || "female";
-    document.getElementById("birth-date").value = cattle.birthDate || "";
-    document.getElementById("weight").value = cattle.weight || "";
-    document.getElementById("last-calving-date").value = cattle.lastCalvingDate || "";
-    document.getElementById("expected-calving-date").value = cattle.expectedCalvingDate || "";
-    document.getElementById("medications").value = cattle.medications || "";
-    document.getElementById("health-status").value = cattle.healthStatus || "healthy";
-    document.getElementById("notes").value = cattle.notes || "";
+    document.getElementById("f-tag").value = cattle.tagNumber || "";
+    document.getElementById("f-name").value = cattle.nameBreed || "";
+    document.getElementById("f-gender").value = cattle.gender || "female";
+    document.getElementById("f-birth").value = cattle.birthDate || "";
+    document.getElementById("f-weight").value = cattle.weight ?? "";
+    document.getElementById("f-last-calving").value = cattle.lastCalvingDate || "";
+    document.getElementById("f-expected-calving").value = cattle.expectedCalvingDate || "";
+    document.getElementById("f-meds").value = cattle.medications || "";
+    document.getElementById("f-status").value = cattle.healthStatus || "healthy";
+    document.getElementById("f-notes").value = cattle.notes || "";
   }
 
   resetForm() {
@@ -47,12 +47,10 @@ export class FormView {
   }
 
   updateFormUI(isEditing) {
-    const titleEl = document.getElementById("addCowModalLabel");
-    const saveBtn = document.getElementById("save-cattle-btn");
+    const titleEl = document.getElementById("cattleModalTitle");
+    const saveBtn = this.form?.querySelector('button[type="submit"]');
     if (titleEl) {
-      titleEl.innerHTML = isEditing
-        ? `<i class="fas fa-edit me-2 text-success"></i>Edit Cattle Record`
-        : `<i class="fas fa-cow me-2 text-success"></i>Add New Cattle Record`;
+      titleEl.textContent = isEditing ? "Edit Cattle Record" : "Add New Cattle Record";
     }
     if (saveBtn) {
       saveBtn.textContent = isEditing ? "Update Record" : "Save Record";
