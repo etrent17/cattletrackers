@@ -26,7 +26,7 @@ Status key: **Not started** · **In progress** · **In review** (pull request op
 | 13 | [Deployment hardening](progress/13-deploy-hardening.md) | `feature/deploy-hardening` | none | Done |
 | 17 | [Docker image package](progress/17-docker-package.md) | `feature/docker-package` | 13 | In review |
 | **Phase 4: Later** | | | | |
-| 14 | [Offline editing](progress/14-offline-editing.md) | `feature/offline-editing` | 02, 04 | Not started |
+| 14 | [Offline editing](progress/14-offline-editing.md) | `feature/offline-editing` | 02, 04 | In review |
 | **Phase 5: Design (after everything is functional)** | | | | |
 | 15 | [Apply Emil's design](progress/15-emil-design.md) | `feature/emil-design` | 01 to 13 | Not started |
 | 16 | [Impeccable polish pass](progress/16-impeccable-polish.md) | `feature/impeccable-polish` | 15 | Not started |
