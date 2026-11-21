@@ -49,7 +49,7 @@ function treatmentRow(t, { showCow, open, today }) {
     ? `<td><span class="badge badge-cow">${escapeHtml(t.cattleTag)}</span> <span class="fw-semibold">${escapeHtml(t.cattleName || "Unnamed")}</span></td>`
     : "";
   const viewBtn = showCow
-    ? `<button class="btn btn-sm btn-outline-info btn-treatment-open" data-cattle-id="${escapeHtml(t.cattleId)}" title="View animal"><i class="fas fa-eye"></i><span class="visually-hidden">View animal</span></button>`
+    ? `<button class="btn btn-sm btn-outline-info btn-treatment-open" data-cattle-id="${escapeHtml(t.cattleId)}" title="View animal" aria-label="View animal"><i class="fas fa-eye" aria-hidden="true"></i></button>`
     : "";
   return `
     <tr data-treatment-id="${escapeHtml(t.id)}">
@@ -63,8 +63,8 @@ function treatmentRow(t, { showCow, open, today }) {
       <td class="treatment-notes">${escapeHtml(t.notes || "")}</td>
       <td class="text-nowrap">
         ${viewBtn}
-        <button class="btn btn-sm btn-outline-primary btn-treatment-edit" data-id="${escapeHtml(t.id)}" title="Edit treatment"><i class="fas fa-edit"></i><span class="visually-hidden">Edit treatment</span></button>
-        <button class="btn btn-sm btn-outline-danger btn-treatment-delete" data-id="${escapeHtml(t.id)}" title="Delete treatment"><i class="fas fa-trash"></i><span class="visually-hidden">Delete treatment</span></button>
+        <button class="btn btn-sm btn-outline-primary btn-treatment-edit" data-id="${escapeHtml(t.id)}" title="Edit treatment" aria-label="Edit treatment"><i class="fas fa-edit" aria-hidden="true"></i></button>
+        <button class="btn btn-sm btn-outline-danger btn-treatment-delete" data-id="${escapeHtml(t.id)}" title="Delete treatment" aria-label="Delete treatment"><i class="fas fa-trash" aria-hidden="true"></i></button>
       </td>
     </tr>`;
 }
