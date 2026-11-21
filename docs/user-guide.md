@@ -36,7 +36,7 @@ On Cattle Records, type in the search box to match cow number, name/breed, medic
 |---|---|
 | Cow Number | Required, up to 25 characters, unique per user (not case-sensitive) |
 | Name/Breed | Up to 100 characters |
-| Gender | Female or Male |
+| Gender | Female or Male; optional, shown as "—" when not recorded |
 | Birth Date | Date; age is calculated from it |
 | Weight (lbs) | Greater than 0, at most 5000 |
 | Last Calving Date | Date |
