@@ -15,6 +15,20 @@ All bodies are JSON. Errors have the form `{ "error": "message" }`. Validation f
 | POST | `/login` | `email`, `password`. 401 on bad credentials |
 | POST | `/demo` | 201; 404 if demo mode is off; 503 if too many demo users |
 | POST | `/logout` | Destroys the session |
+| POST | `/password` | Sign-in required. `currentPassword`, `newPassword` (10 to 128 characters). 200 `{ "ok": true }`; see below |
+
+### Changing the password
+
+`POST /api/auth/password` checks `currentPassword` against the stored argon2 hash and stores `newPassword` hashed. On success every other session of the same user is deleted (other browsers and devices must sign in again) and the current session gets a new ID with a new cookie, so the caller stays signed in.
+
+| Status | When |
+|---|---|
+| 400 | `Current password is incorrect`; `Enter your current password`; `New password must be 10 to 128 characters`; `New password must be different from the current one` |
+| 401 | Not signed in, or the account no longer exists |
+| 403 | `Demo accounts can't change their password` |
+| 429 | More than 10 attempts in 15 minutes by the same user (counted per account, successful or not) |
+
+A wrong current password answers 400, not 401, because the browser treats 401 as "signed out".
 
 ## Cattle (`/api/cattle`, sign-in required)
 
