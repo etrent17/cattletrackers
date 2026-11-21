@@ -3,6 +3,9 @@ const { Pool, types } = require('pg');
 types.setTypeParser(1082, (v) => v); // keep DATE columns as 'YYYY-MM-DD' strings
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// An idle client losing its connection (e.g. PostgreSQL restarting) emits 'error' on the pool;
+// without a listener that would crash the process. The pool replaces the client on the next query.
+pool.on('error', (err) => console.error('PostgreSQL idle client error:', err.message));
 
 async function initSchema() {
   await pool.query(`
