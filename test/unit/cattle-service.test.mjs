@@ -267,7 +267,7 @@ describe('API calls (fetch stubbed)', () => {
     const replace = mock.fn();
     globalThis.location = { replace };
     try {
-      await assert.rejects(new CattleService().loadData(), /Session expired/);
+      await assert.rejects(new CattleService().loadData(), (err) => err.sessionExpired === true && err.status === 401);
       assert.deepEqual(replace.mock.calls[0].arguments, ['/login.html']);
     } finally {
       delete globalThis.location;
