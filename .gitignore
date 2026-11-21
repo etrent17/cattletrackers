@@ -142,3 +142,10 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+# Database backups (scripts/backup.sh)
+backups/
+
+# Local Docker customisations (docs/deployment.md)
+docker-compose.override.yml
+Caddyfile

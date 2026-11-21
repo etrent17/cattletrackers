@@ -22,11 +22,6 @@ The API exists; there is no interface.
 ### 9. Delete has no error handling
 A failed delete request raises an unhandled error.
 
-### 10. Docker setup omits some settings
-The generated compose file does not pass `DEMO_MODE` or `COOKIE_SECURE`, and `install.sh` overwrites generated files on each run.
-
-### 11. Health check ignores the database
-`/api/health` reports healthy even if PostgreSQL is down.
 
 ### 13. No automated tests
 `npm test` prints an error and exits.
@@ -40,6 +35,8 @@ The generated compose file does not pass `DEMO_MODE` or `COOKIE_SECURE`, and `in
 - **2. Cattle list element IDs did not match the page.** `ListView` now uses `list-title`, `list-body`, and `list-empty`. Fixed on `feature/fix-core-views` (`0c99c91`), verified in a browser.
 - **3. Icons did not load.** `index.html` loads Font Awesome 6.5.2 from cdnjs. Fixed on `feature/fix-core-views` (`4b0841d`), verified in a browser.
 - **12. Calving-month statistic mixed date handling.** Dates are parsed as local calendar dates (`parseLocalDate`). Fixed on `feature/fix-core-views` (`7a983c5`), verified with browser time zones either side of UTC.
+- (10) Docker setup omitted some settings: compose did not pass `DEMO_MODE` or `COOKIE_SECURE`, and `install.sh` overwrote the Docker files on each run. The Docker files are now committed, `install.sh` only creates `.env` and runs Compose, and Compose passes `DEMO_MODE`, `COOKIE_SECURE`, and `HSTS`. Fixed on `feature/deploy-hardening` (compose validated with `docker compose config`; not run under a Docker daemon).
+- (11) Health check ignored the database: `/api/health` now runs `SELECT 1` and returns 503 when PostgreSQL is unreachable. Fixed on `feature/deploy-hardening`.
 
 ## Note on login graphics
 
