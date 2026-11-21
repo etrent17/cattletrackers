@@ -2,7 +2,8 @@ import { CattleService } from "../services/CattleService.js";
 import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
-import { calculateAge, formatHealthStatus } from "../utils/DateHelpers.js";
+import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
+import { hideErrorBanner, showErrorBanner, showToast } from "../utils/feedback.js";
 
 export class CattleController {
   constructor() {
@@ -11,14 +12,31 @@ export class CattleController {
     this.formView = new FormView();
     this.listView = new ListView();
     this.editingId = null;
+    this.saving = false;
     this.currentView = "dashboard";
   }
 
+  // Listeners go on first so the page stays usable when the load fails.
   async init() {
-    await this.cattleService.loadData();
     this.setupEventListeners();
     this.setupOnlineStatus();
+    await this.loadData();
+  }
+
+  // Loads the herd from the server and redraws. On failure shows the error
+  // banner with a Retry button instead of an empty page. Returns true on success.
+  async loadData() {
+    try {
+      await this.cattleService.loadData();
+    } catch (err) {
+      if (!err.sessionExpired) {
+        showErrorBanner(`Couldn't load your cattle records. ${err.message}`, () => this.loadData());
+      }
+      return false;
+    }
+    hideErrorBanner();
     this.refreshAllViews();
+    return true;
   }
 
   setupEventListeners() {
@@ -90,7 +108,7 @@ export class CattleController {
   // Breeding), narrowed by the search box and status filter.
   renderCattleList() {
     const subViews = {
-      calving: { title: "Calving Records", filter: (c) => c.gender === "female" && (c.lastCalvingDate || c.expectedCalvingDate) },
+      calving: { title: "Calving Records", filter: (c) => c.gender !== "male" && (c.lastCalvingDate || c.expectedCalvingDate) },
       medical: { title: "Medical & Health Records", filter: (c) => c.medications || c.healthStatus !== "healthy" },
       breeding: { title: "Breeding History", filter: (c) => c.healthStatus === "pregnant" || c.expectedCalvingDate },
     };
@@ -123,8 +141,7 @@ export class CattleController {
       `;
       document.getElementById("reset-demo-data-btn")?.addEventListener("click", async () => {
         localStorage.removeItem("cattle-data");
-        await this.cattleService.loadData();
-        this.refreshAllViews();
+        if (!(await this.loadData())) return;
         this.showNotification("Sample herd data restored", "success");
       });
     } else {
@@ -139,6 +156,11 @@ export class CattleController {
   }
 
   async handleFormSubmit() {
+    // Ignore a second submit (double-click, Enter) while the first is in flight.
+    if (this.saving) return;
+    const saveBtn = document.querySelector('#cattle-form button[type="submit"]');
+    this.saving = true;
+    if (saveBtn) saveBtn.disabled = true;
     try {
       const formData = this.formView.getFormData();
 
@@ -160,7 +182,10 @@ export class CattleController {
       this.formView.closeModal();
       this.refreshAllViews();
     } catch (err) {
-      this.showNotification(err.message || "Unable to save record", "error");
+      if (!err.sessionExpired) this.showNotification(err.message || "Unable to save record", "error");
+    } finally {
+      this.saving = false;
+      if (saveBtn) saveBtn.disabled = false;
     }
   }
 
@@ -181,7 +206,7 @@ export class CattleController {
       <ul class="list-group list-group-flush">
         <li class="list-group-item"><strong>Cow ID:</strong> ${c.tagNumber}</li>
         <li class="list-group-item"><strong>Name / Breed:</strong> ${c.nameBreed || "—"}</li>
-        <li class="list-group-item"><strong>Gender:</strong> ${c.gender === "male" ? "Male" : "Female"}</li>
+        <li class="list-group-item"><strong>Gender:</strong> ${formatGender(c.gender)}</li>
         <li class="list-group-item"><strong>Birth Date / Age:</strong> ${c.birthDate || "—"} (${calculateAge(c.birthDate)})</li>
         <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${c.weight} lbs` : "—"}</li>
         <li class="list-group-item"><strong>Last Calving:</strong> ${c.lastCalvingDate || "N/A"}</li>
@@ -196,17 +221,41 @@ export class CattleController {
 
   async handleDelete(id) {
     if (!confirm("Delete this cattle record?")) return;
-    await this.cattleService.deleteCattle(id);
+    try {
+      await this.cattleService.deleteCattle(id);
+    } catch (err) {
+      if (err.sessionExpired) return;
+      if (err.status === 404) {
+        // Already gone, e.g. deleted in another tab: say so and resync the list.
+        this.showNotification("That record was already deleted. The list has been refreshed.", "error");
+        await this.loadData();
+      } else {
+        this.showNotification(`Couldn't delete the record. ${err.message}`, "error");
+      }
+      return;
+    }
     this.showNotification("Cattle record deleted", "success");
     this.refreshAllViews();
   }
 
+  // Each part renders on its own, so one failing view does not blank the others.
   refreshAllViews() {
-    const stats = this.cattleService.getStatistics();
-    this.dashboardView.renderStats(stats);
-    this.dashboardView.renderRecentTable(this.cattleService.getRecentCattle(5));
-    this.dashboardView.renderUpcomingEvents(this.cattleService.getUpcomingCalvings(5));
-    this.renderCattleList();
+    const parts = [
+      () => this.dashboardView.renderStats(this.cattleService.getStatistics()),
+      () => this.dashboardView.renderRecentTable(this.cattleService.getRecentCattle(5)),
+      () => this.dashboardView.renderUpcomingEvents(this.cattleService.getUpcomingCalvings(5)),
+      () => this.renderCattleList(),
+    ];
+    let failed = false;
+    for (const render of parts) {
+      try {
+        render();
+      } catch (err) {
+        failed = true;
+        console.error("View failed to render:", err);
+      }
+    }
+    if (failed) this.showNotification("Part of the page couldn't be displayed. Try reloading.", "error");
   }
 
   setupOnlineStatus() {
@@ -228,10 +277,6 @@ export class CattleController {
   }
 
   showNotification(message, type = "success") {
-    const el = document.getElementById("notification");
-    if (!el) return;
-    el.textContent = message;
-    el.className = `toast-notification ${type} show`;
-    setTimeout(() => el.classList.remove("show"), 3000);
+    showToast(message, type);
   }
 }
