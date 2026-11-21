@@ -44,8 +44,8 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 |---|---|---|---|
 | Performance reports | nav item `reports` | Placeholder | Shows three herd statistics |
 | Health reports | nav item `health-reports` | Placeholder | Same content |
-| Financial reports | nav item `financial-reports` | Placeholder | Same content |
-| Financial records | none | Missing | No table, route, or form |
+| Financial reports | nav item `financial-reports`, `FinanceController` | Implemented | Income, expenses, net, cost per head, by month and by category for a period (`GET /api/transactions/summary`) |
+| Financial records | nav item `finance`, `routes/transactions.js` | Implemented | Add/edit/delete, period and animal filters, CSV export; cow details dialog lists an animal's transactions |
 | System settings | nav item `settings` | Placeholder | Text and reset button describe `localStorage`, which the app does not use |
 
 ## Platform

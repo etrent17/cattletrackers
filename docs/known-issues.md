@@ -5,10 +5,7 @@ Found by reading source at commit `7fb8152`. None has been reproduced in a brows
 ## Open
 
 ### 4. Report pages are placeholders
-Performance, Health, and Financial reports show identical herd statistics.
-
-### 5. No financial functionality
-No table, API route, or form exists.
+Performance and Health reports show identical herd statistics. (Financial Reports is resolved; see below.)
 
 ### 6. Settings page is inaccurate
 It says offline storage uses `localStorage` and offers a sample-herd reset that only clears a key the app does not use.
@@ -31,6 +28,8 @@ The API exists; there is no interface.
 - **8. Startup failures were silent.** Listeners are attached before the herd loads; a failed load or unreachable server shows an error banner with Retry, and `app.js` catches a failing start-up. Fixed on `feature/error-handling`, verified in a browser (server stopped, requests aborted or answered 500).
 - **9. Delete had no error handling.** A failed delete shows an error toast; deleting a record already deleted in another tab says so and refreshes the list. Fixed on `feature/error-handling`, verified in a browser.
 - (13) No automated tests: `npm test` now runs unit and API tests against PostgreSQL, `npm run test:e2e` runs a browser smoke test, and GitHub Actions runs both on every push and pull request. Added on `feature/automated-tests`; the workflow passed on GitHub for the branch push (run 44942939463).
+- **5. No financial functionality.** A `transactions` table, `/api/transactions` (list, create, update, delete, summary) and a Financial Records page with add/edit dialog, period filter and CSV export now exist; the cow details dialog lists an animal's transactions. Fixed on `feature/financial-records`, verified in a browser and by API and browser tests.
+- **4 (financial part). Financial Reports was a placeholder.** It now shows income, expenses, net, cost per head, a monthly breakdown and totals by category for a chosen period, summed exactly in SQL. Fixed on `feature/financial-records`, verified in a browser. Performance and Health reports remain open under item 4.
 
 ## Note on login graphics
 

@@ -6,17 +6,17 @@
 server.js            entry point: checks settings, prepares the database, listens
 app.js               Express app (no listening): security headers, sessions, routing
 db.js                PostgreSQL pool, schema creation, demo cleanup
-routes/              auth.js, cattle.js, users.js
+routes/              auth.js, cattle.js, users.js, transactions.js
 middleware/auth.js   requireAuth, requireAdmin, validate
 lib/                 password.js, demo.js
 public/              index.html, login.html, CSS, service-worker.js
 src/                 browser ES modules
   app.js             startup and sign-out
   auth.js            login page logic
-  controllers/       CattleController
-  services/          CattleService (API calls and statistics)
-  views/             DashboardView, ListView, FormView
-  models/ utils/     Cattle model, validators, date helpers, escapeHtml
+  controllers/       CattleController, FinanceController (financial pages)
+  services/          CattleService (API calls and statistics), FinanceService
+  views/             DashboardView, ListView, FormView, FinanceView
+  models/ utils/     Cattle model, validators, date helpers, escapeHtml, money (cents), csv
 test/                unit tests (unit/), API tests (api/), shared setup (helpers/)
 e2e/                 browser smoke test (Playwright)
 ```
@@ -34,6 +34,8 @@ Created automatically at startup (`initSchema`).
 **users**: `id`, `email` (unique), `password_hash`, `role` (admin or user), `created_at`, `is_demo`.
 
 **cattle**: `id` (UUID), `owner_id` (users, cascade delete), `tag_number`, `name_breed`, `gender`, `birth_date`, `weight`, `last_calving_date`, `expected_calving_date`, `medications`, `health_status`, `notes`, `created_at`, `updated_at`. A unique index on owner and lower-cased tag number prevents duplicates.
+
+**transactions**: `id` (UUID), `owner_id` (users, cascade delete), `date`, `kind` (`income` or `expense`), `category` (1 to 50 characters), `amount` (`NUMERIC(12,2)`, greater than 0), `cattle_id` (cattle, optional, set to null when the animal is deleted), `description`, `created_at`, `updated_at`. Indexed on owner and date. The API checks that `cattle_id` belongs to the same owner. Amounts are returned as decimal strings.
 
 **session**: managed by `connect-pg-simple`.
 

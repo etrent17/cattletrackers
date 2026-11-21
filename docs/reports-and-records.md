@@ -25,8 +25,22 @@ They show current field values only. There is no history of past calvings, treat
 
 ## Report pages
 
-Performance Reports, Health Reports, and Financial Reports currently render the same three figures: herd size, healthy percentage, and active treatments. They are placeholders.
+Performance Reports and Health Reports currently render the same three figures: herd size, healthy percentage, and active treatments. They are placeholders.
+
+Financial Reports shows the figures described below.
 
 ## Financial data
 
-Not implemented. There is no financial table, API route, or entry form. Any finance feature would need all three.
+Transactions (income or expense, with date, category, amount, optional animal and description) are entered on the Financial Records page and stored in the `transactions` table. Amounts are `NUMERIC(12,2)` and always positive; the type decides the sign.
+
+The Financial Reports page uses `GET /api/transactions/summary` for the chosen period:
+
+| Figure | Definition |
+|---|---|
+| Income / Expenses | Sum of income / expense amounts dated in the period |
+| Net | Income minus expenses |
+| Cost per head | Expenses in the period ÷ animals on record now, rounded to the cent; blank with no animals. A current-herd approximation, not an average herd size over the period |
+| By month | Income, expenses and net per calendar month with transactions |
+| By category | Total and count per type and category |
+
+Sums are computed in SQL on `NUMERIC` values and sent as decimal strings; the browser adds amounts only as whole cents (the records-page cards, the cow details dialog), so no floating-point drift appears.
