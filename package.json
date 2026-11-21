@@ -20,7 +20,7 @@
     "test": "node --test --test-concurrency=1 \"test/**/*.test.{js,mjs}\"",
     "test:unit": "node --test \"test/unit/**/*.test.{js,mjs}\"",
     "test:api": "node --test --test-concurrency=1 \"test/api/**/*.test.{js,mjs}\"",
-    "test:e2e": "node --test \"e2e/**/*.e2e.{js,mjs}\""
+    "test:e2e": "node --test --test-concurrency=1 \"e2e/**/*.e2e.{js,mjs}\""
   },
   "dependencies": {
     "argon2": "^0.44.0",
