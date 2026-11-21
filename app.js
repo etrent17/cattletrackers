@@ -74,6 +74,7 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/cattle', require('./routes/cattle'));
+app.use('/api/transactions', require('./routes/transactions'));
 
 app.use((err, req, res, next) => {
   // Body the JSON parser could not read (malformed JSON, too large): a client error, not a server error
