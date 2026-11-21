@@ -77,6 +77,12 @@ app.use('/api/users', require('./routes/users'));
 const calvings = require('./routes/calvings');
 app.use('/api/cattle/:cattleId/calvings', calvings.forCattle);
 app.use('/api/calvings', calvings.router);
+const breedings = require('./routes/breedings');
+const pregnancyChecks = require('./routes/pregnancy-checks');
+app.use('/api/cattle/:cattleId/breedings', breedings.forCattle);
+app.use('/api/breedings', breedings.router);
+app.use('/api/cattle/:cattleId/pregnancy-checks', pregnancyChecks.forCattle);
+app.use('/api/pregnancy-checks', pregnancyChecks.router);
 app.use('/api/cattle', require('./routes/cattle'));
 app.use('/api/transactions', require('./routes/transactions'));
 
