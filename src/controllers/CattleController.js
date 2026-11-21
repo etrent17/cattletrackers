@@ -1,4 +1,5 @@
 import { CattleService } from "../services/CattleService.js";
+import { FinanceController } from "./FinanceController.js";
 import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
@@ -15,6 +16,7 @@ export class CattleController {
     this.editingId = null;
     this.saving = false;
     this.currentView = "dashboard";
+    this.financeController = new FinanceController({ cattleService: this.cattleService, getCurrentView: () => this.currentView });
   }
 
   // Listeners go on first so the page stays usable when the load fails.
@@ -123,6 +125,7 @@ export class CattleController {
   renderSecondaryView(viewName) {
     const titleEl = document.getElementById("secondary-view-title");
     const bodyEl = document.getElementById("secondary-view-body");
+    if (this.financeController.handles(viewName)) return this.financeController.render(viewName, titleEl, bodyEl);
     const stats = this.cattleService.getStatistics();
 
     const titles = {
@@ -217,6 +220,7 @@ export class CattleController {
         <li class="list-group-item"><strong>Notes:</strong> ${escapeHtml(c.notes || "No notes recorded.")}</li>
       </ul>
     `;
+    this.financeController.appendCattleSection(c.id, document.getElementById("viewCowModalBody"));
     new bootstrap.Modal(document.getElementById("viewCowModal")).show();
   }
 
