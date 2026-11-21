@@ -78,6 +78,7 @@ const calvings = require('./routes/calvings');
 app.use('/api/cattle/:cattleId/calvings', calvings.forCattle);
 app.use('/api/calvings', calvings.router);
 app.use('/api/cattle', require('./routes/cattle'));
+app.use('/api/transactions', require('./routes/transactions'));
 
 app.use((err, req, res, next) => {
   // Body the JSON parser could not read (malformed JSON, too large): a client error, not a server error

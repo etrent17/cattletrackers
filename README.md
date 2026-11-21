@@ -10,14 +10,14 @@ Cattle Trackers is a livestock management web application: an Express server, a 
 - Per-user cattle records: add, view, edit, delete, search, and filter by health status
 - Calving records: a dated calving history per cow, a herd-wide Calving Records page, and adding the calf as a new animal
 - A dashboard, plus medical and breeding views that filter the cattle list
+- Financial records (income and expenses, optionally per animal) with CSV export, and a Financial Reports page
 - An admin-only user-management API
 - A Docker-based installer
 - Automated tests (unit, API, and a browser smoke test) that also run on GitHub for every push and pull request
 
 ## What does not exist yet
 
-- Financial records of any kind
-- Distinct performance, health, or financial reports (those screens are placeholders)
+- Distinct performance or health reports (those screens are placeholders)
 - A user-management screen
 - Offline editing of cattle data
 
@@ -47,7 +47,7 @@ npm test
 | `npm test` | Unit and API tests: every `test/**/*.test.js` or `.test.mjs` file | PostgreSQL |
 | `npm run test:unit` | Front-end unit tests only (`test/unit/`) | nothing |
 | `npm run test:api` | API tests only (`test/api/`) | PostgreSQL |
-| `npm run test:e2e` | Browser tests (`e2e/`, one file at a time): the smoke test (set up, sign in, add a cow, see it on the dashboard and list, delete it) and one file per feature, such as `calving.e2e.js`, `settings.e2e.js` and `users.e2e.js` | PostgreSQL, Chromium |
+| `npm run test:e2e` | Browser tests (`e2e/`, one file at a time): the smoke test (set up, sign in, add a cow, see it on the dashboard and list, delete it) and one file per feature, such as `calving.e2e.js`, `finance.e2e.js`, `settings.e2e.js` and `users.e2e.js` | PostgreSQL, Chromium |
 
 Before the first `npm run test:e2e`, install the browser once with `npx playwright install chromium` (add `--with-deps` on a fresh Linux machine).
 

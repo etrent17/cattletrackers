@@ -6,17 +6,17 @@
 server.js            entry point: checks settings, prepares the database, listens
 app.js               Express app (no listening): security headers, sessions, routing
 db.js                PostgreSQL pool, schema creation, demo cleanup
-routes/              auth.js, cattle.js, calvings.js, users.js
+routes/              auth.js, cattle.js, calvings.js, users.js, transactions.js
 middleware/auth.js   requireAuth, requireAdmin, validate
 lib/                 password.js, demo.js, records.js (helpers for event-record routes)
 public/              index.html, login.html, CSS, service-worker.js
 src/                 browser ES modules
   app.js             startup and sign-out
   auth.js            login page logic
-  controllers/       CattleController, CalvingController, UsersController
-  services/          CattleService (API calls and statistics), AccountService (password change), CalvingService
-  views/             DashboardView, ListView, FormView, SettingsView, UsersView, CalvingView
-  models/ utils/     Cattle model, validators, date helpers, escapeHtml, feedback
+  controllers/       CattleController, CalvingController, UsersController, FinanceController (financial pages)
+  services/          CattleService (API calls and statistics), AccountService (password change), CalvingService, FinanceService
+  views/             DashboardView, ListView, FormView, SettingsView, UsersView, CalvingView, FinanceView
+  models/ utils/     Cattle model, validators, date helpers, escapeHtml, feedback, money (cents), csv
 test/                unit tests (unit/), API tests (api/), shared setup (helpers/)
 e2e/                 browser tests (Playwright): smoke test, one file per feature; shared setup in helpers.js and helpers/
 ```
@@ -38,6 +38,8 @@ Created automatically at startup (`initSchema`).
 **calving_events**: `id` (UUID), `cattle_id` (cattle, cascade delete), `owner_id` (users, cascade delete), `calving_date`, `calf_sex`, `calf_tag`, `birth_weight`, `ease` (unassisted, assisted, caesarean), `outcome` (alive, stillborn), `notes`, `created_at`. Only the date is required. Indexed by animal and by owner, each with the date.
 
 `cattle.last_calving_date` is kept, not derived: it always equals the animal's newest calving event, or NULL when she has none. `routes/calvings.js` updates it in the same transaction as every event insert, update and delete. Keeping the column means the cattle list, dashboard and model read it as before without a join. To hold the rule, `POST /api/cattle` turns a typed last calving date into the first event, `PUT /api/cattle/:id` ignores the field, and the cattle form makes it read-only when editing. At startup, any animal that has a date but no events gets one event for it; this is how data from before calving events existed is carried over, and it cannot repeat because deleting an animal's last event also clears her date.
+
+**transactions**: `id` (UUID), `owner_id` (users, cascade delete), `date`, `kind` (`income` or `expense`), `category` (1 to 50 characters), `amount` (`NUMERIC(12,2)`, greater than 0), `cattle_id` (cattle, optional, set to null when the animal is deleted), `description`, `created_at`, `updated_at`. Indexed on owner and date. The API checks that `cattle_id` belongs to the same owner. Amounts are returned as decimal strings.
 
 **session**: managed by `connect-pg-simple`.
 

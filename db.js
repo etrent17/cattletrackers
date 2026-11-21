@@ -12,6 +12,7 @@ pool.on('error', (err) => console.error('PostgreSQL idle client error:', err.mes
 async function initSchema() {
   await coreSchema();
   await calvingSchema();
+  await initTransactionsSchema();
 }
 
 async function coreSchema() {
@@ -78,6 +79,30 @@ async function calvingSchema() {
   `);
 }
 // --- end calving records --------------------------------------------------------------------
+
+// --- Financial records (feature 11) ---------------------------------------
+// Income and expenses. `amount` is always positive; `kind` decides the sign.
+// A transaction may name one of the owner's animals; deleting the animal keeps the
+// transaction and clears the link. routes/transactions.js checks the animal's owner.
+async function initTransactionsSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS transactions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      kind TEXT NOT NULL CHECK (kind IN ('income','expense')),
+      category TEXT NOT NULL CHECK (length(category) BETWEEN 1 AND 50),
+      amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+      cattle_id UUID REFERENCES cattle(id) ON DELETE SET NULL,
+      description TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS transactions_owner_date_idx ON transactions (owner_id, date);
+    CREATE INDEX IF NOT EXISTS transactions_cattle_idx ON transactions (cattle_id);
+  `);
+}
+// --- end financial records --------------------------------------------------
 
 async function cleanupDemoUsers(hours = 4) {
   const result = await pool.query(

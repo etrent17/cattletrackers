@@ -12,7 +12,7 @@ Describes the interface as coded at commit `7fb8152`. Several screens are affect
 
 ## Navigating
 
-The left sidebar switches views: Dashboard, Cattle Records, Calving Records, Medical Records, Breeding History, three report pages, System Settings, and User Management. Only the selected view is shown.
+The left sidebar switches views: Dashboard, Cattle Records, Calving Records, Medical Records, Breeding History, Financial Records, three report pages, System Settings, and User Management. Only the selected view is shown.
 
 ## Adding a cow (untested)
 
@@ -64,6 +64,35 @@ To change your password, enter your current password, then the new password (10 
 
 The app keeps its own pages and scripts in your browser after a visit, but cattle records are kept on the server. Signing in and viewing or changing records need a connection; without one the app says it can't reach the server and offers Retry.
 
+## Financial records
+
+Open **Financial Records** under Cattle Management.
+
+- **Period** picks the dates shown: Last 12 months (the default: this month and the 11 before it), This month, This year, Last year, All time, or Custom range. Changing From or To switches to a custom range. The period is shared with the Financial Reports page.
+- **Animal** narrows the list to one animal's transactions.
+- The cards show income, expenses, net (income minus expenses) and the number of transactions in the list.
+- **Add Transaction** opens a form: date (today by default), type (Expense or Income), category, amount, an optional animal, and a description. Pick a suggested category (Feed, Vet and medicine, Breeding, Equipment, Labour, Sale of animals, Milk, Other) or type your own, up to 50 characters. Amounts are in dollars, greater than 0, with at most two decimal places (for example `125.50`). Always enter a positive amount; the type decides whether it counts as money in or out.
+- The pencil button edits a transaction; the trash button deletes it after confirmation.
+- **Export CSV** downloads the transactions currently listed (same period and animal) as a CSV file with the columns Date, Type, Category, Amount, Animal, Description. Text that starts with `=`, `+`, `-` or `@` is written with a leading `'` so spreadsheet programs show it as text instead of running it as a formula.
+
+Deleting an animal keeps its transactions; they simply no longer name the animal.
+
+The cow details dialog (eye button) lists the transactions linked to that animal, with its income, expenses and net.
+
+## Financial reports
+
+Open **Financial Reports** under Reports and pick a period, as on the records page. The page shows:
+
+| Figure | Meaning |
+|---|---|
+| Income, Expenses | Totals of the transactions dated in the period |
+| Net | Income minus expenses |
+| Cost per head | Expenses in the period divided by the number of animals on record today, rounded to the cent. It does not average the herd size over the period; "—" when you have no animals |
+| By month | Income, expenses and net for each month that has transactions, with bars for comparison |
+| By category | Totals per category for income and for expenses, with each category's share |
+
+All amounts are added exactly, to the cent.
+
 ## Demo accounts
 
-A demo session lasts four hours, starts with eight sample animals, and is limited to 25 animals. Demo data is deleted automatically.
+A demo session lasts four hours, starts with eight sample animals and twelve sample transactions from the past five months, and is limited to 25 animals and 200 transactions. Demo data is deleted automatically.

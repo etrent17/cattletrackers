@@ -1,5 +1,6 @@
 import { CattleService } from "../services/CattleService.js";
 import { UsersController } from "./UsersController.js";
+import { FinanceController } from "./FinanceController.js";
 import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
@@ -32,6 +33,7 @@ export class CattleController {
     this.recordPages = { calving: this.calvingController };
     // Tabs after "Details" in the cow details modal: { id, label, appliesTo?(cow), render(cow, pane) }
     this.detailTabs = Object.values(this.recordPages).map((page) => page.detailTab());
+    this.financeController = new FinanceController({ cattleService: this.cattleService, getCurrentView: () => this.currentView });
   }
 
   // Listeners go on first so the page stays usable when the load fails.
@@ -146,6 +148,7 @@ export class CattleController {
   renderSecondaryView(viewName) {
     const titleEl = document.getElementById("secondary-view-title");
     const bodyEl = document.getElementById("secondary-view-body");
+    if (this.financeController.handles(viewName)) return this.financeController.render(viewName, titleEl, bodyEl);
     const stats = this.cattleService.getStatistics();
 
     const titles = {
@@ -264,6 +267,7 @@ export class CattleController {
       if (tab.id === activeTab) draw();
       else bodyEl.querySelector(`[data-tab="${tab.id}"]`).addEventListener("show.bs.tab", draw, { once: true });
     }
+    this.financeController.appendCattleSection(c.id, document.getElementById("cow-tab-details"));
     bootstrap.Modal.getOrCreateInstance(document.getElementById("viewCowModal")).show();
   }
 
