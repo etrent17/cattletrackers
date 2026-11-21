@@ -65,7 +65,8 @@ describe('settings screen', () => {
     const body = await page.locator('#view-secondary').innerText();
     assert.doesNotMatch(body, /localStorage/i);
     assert.doesNotMatch(body, /Reset to Blueprint/i);
-    assert.match(body, /records are kept on the server/);
+    assert.match(body, /While offline you can view, add, edit and delete cattle/);
+    assert.match(body, /Signing out removes the copy of your herd from this device/);
   });
 
   test('checks the form before sending it', async () => {

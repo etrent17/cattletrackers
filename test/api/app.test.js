@@ -34,6 +34,8 @@ describe('security headers', () => {
     const csp = res.headers['content-security-policy'];
     assert.match(csp, /default-src 'self'/);
     assert.match(csp, /script-src 'self' https:\/\/cdn\.jsdelivr\.net(;|$)/);
+    // the service worker fetches the CDN files itself, which connect-src governs (offline editing)
+    assert.match(csp, /connect-src 'self' https:\/\/cdn\.jsdelivr\.net https:\/\/cdnjs\.cloudflare\.com(;|$)/);
     assert.equal(res.headers['x-content-type-options'], 'nosniff');
   });
 

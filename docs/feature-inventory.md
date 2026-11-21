@@ -56,9 +56,9 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 
 | Feature | Where | Status | Notes |
 |---|---|---|---|
-| Online/offline indicator | `setupOnlineStatus` | Implemented | |
-| Static asset caching | `public/service-worker.js` | Implemented | API requests are never cached |
-| Offline cattle editing | none | Missing | |
+| Online/offline indicator | `src/utils/connectivity.js`, `SyncView.renderIndicator` | Implemented | Follows real reachability (`navigator.onLine` and whether API requests get an answer), also when the app starts offline |
+| Static asset caching | `public/service-worker.js` | Implemented | App shell and the CDN files, so the page opens offline (HTTPS or localhost). API requests are never cached |
+| Offline cattle viewing and editing | `OfflineStore.js`, `SyncEngine.js`, `SyncController.js` | Implemented | Cattle only: herd saved in IndexedDB, add/edit/delete queued and replayed on reconnect, server wins on conflict, refused changes kept under "Unsynced changes". Event records, reports and settings need a connection |
 | Health endpoint | `GET /api/health` | Implemented | Returns 503 when the database is down |
 | Security headers and CSP | `app.js` (helmet) | Implemented | HSTS off unless `HSTS=true` |
 | Docker installer | `install.sh`, `docker-compose.yml` | Implemented | |

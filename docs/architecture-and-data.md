@@ -11,19 +11,19 @@ middleware/auth.js   requireAuth, requireAdmin, validate
 lib/                 password.js, demo.js, records.js (helpers for event-record routes)
 public/              index.html, login.html, CSS, service-worker.js
 src/                 browser ES modules
-  app.js             startup and sign-out
+  app.js             startup (also from the saved copy when offline), sign-out, service worker registration
   auth.js            login page logic
-  controllers/       CattleController, CalvingController, UsersController, FinanceController (financial pages), ReportsController (performance and health reports)
-  services/          CattleService (API calls and statistics), AccountService (password change), CalvingService, FinanceService
-  views/             DashboardView, ListView, FormView, SettingsView, UsersView, CalvingView, FinanceView
-  models/ utils/     Cattle model, validators, date helpers, escapeHtml, feedback, money (cents), csv
+  controllers/       CattleController, CalvingController, UsersController, FinanceController (financial pages), ReportsController (performance and health reports), SyncController (offline banner, replay, unsynced changes)
+  services/          CattleService (API calls and statistics), AccountService (password change), CalvingService, FinanceService, OfflineStore (IndexedDB), SyncEngine (outbox and replay)
+  views/             DashboardView, ListView, FormView, SettingsView, UsersView, CalvingView, FinanceView, SyncView
+  models/ utils/     Cattle model, validators, date helpers, escapeHtml, feedback, money (cents), csv, connectivity (online/offline state)
 test/                unit tests (unit/), API tests (api/), shared setup (helpers/)
 e2e/                 browser tests (Playwright): smoke test, one file per feature; shared setup in helpers.js and helpers/
 ```
 
 ## Request flow
 
-Browser view or controller, then `CattleService`, then `/api/cattle`, then the route handler, then PostgreSQL. After a change the controller refreshes its views from the in-memory list.
+Browser view or controller, then `CattleService`, then `/api/cattle`, then the route handler, then PostgreSQL. After a change the controller refreshes its views from the in-memory list. When the server can't be reached, cattle reads come from the copy saved in the browser and cattle writes go to an outbox; see "Offline editing" below.
 
 Errors: `CattleService` errors carry the HTTP status (0 when the server is unreachable); a 401 sends the browser to the login page. A failed startup or herd load shows the error banner with Retry, and a failed action shows an error toast (`src/utils/feedback.js`). The app's event listeners are attached before data loads, so the page stays usable after a failure.
 
@@ -110,4 +110,49 @@ Always escape record fields in templates. Views build HTML with template strings
 
 ## Service worker
 
-Caches static assets and serves them when the network fails. Requests to `/api/` are never intercepted, so cattle data is not available offline. Nothing is stored in `localStorage`. The System Settings screen describes this to users.
+`public/service-worker.js` keeps the app shell so the page opens without a connection: every file in `urlsToCache` (fetched when the worker installs; network first, cache as fallback) and the three CDN files `index.html` needs (Bootstrap's stylesheet and script, Font Awesome's stylesheet; cache first, since their URLs carry a version). The worker fetches the CDN files itself, and a worker's `fetch()` is checked against the `connect-src` directive of the content security policy, so `app.js` lists both CDNs there. Without that entry every CDN request from a page the worker controls fails, online too; `e2e/offline.e2e.js` runs the real worker against a local stand-in for the CDNs to catch this.
+
+Requests to `/api/` are never intercepted and no API answer is ever put in the worker's cache. Cattle data kept for offline use lives in IndexedDB (next section). Nothing is stored in `localStorage`. A service worker only runs on HTTPS or `localhost`. The System Settings screen describes offline behaviour to users.
+
+## Offline editing
+
+Scope: **cattle records only.** The dashboard, the cattle list and a cow's Details tab work from a saved copy, and cattle can be added, edited and deleted. Event records (calvings, weighings, treatments, breedings, transactions), reports, user management and the password form are online-only: while offline `CattleController.switchView` shows the `#view-needs-connection` section instead of the page (so none of its buttons can be reached and nothing is fetched), the cow details dialog shows only its Details tab, and the password form is disabled.
+
+Conflict rule: **the server wins, and no change is dropped silently.**
+
+**Connectivity** (`src/utils/connectivity.js`). "Online" means `navigator.onLine` is true *and* the last API request got an answer. `CattleService.api()` reports every request; a network error or a 502/503/504 counts as unreachable. `app.js` wires the top-bar indicator to this before anything else, so it is right even when startup stops early (it used to say Online when the app started offline).
+
+**The saved copy** (`src/services/OfflineStore.js`). One IndexedDB database (`cattle-trackers-offline`) with one record:
+
+| Field | Holds |
+|---|---|
+| `user` | the account the copy belongs to (`id`, `email`, `role`, `isDemo`) |
+| `herd`, `herdSavedAt` | the rows of the last successful `GET /api/cattle`, kept current after every accepted change; when they were last written |
+| `outbox` | changes not yet accepted by the server, oldest first |
+| `unsynced` | changes the server refused, each with the reason and the server's row, until the user re-applies or discards it |
+| `nextSeq` | counter for outbox and unsynced keys |
+
+Every change to it is one read-modify-write inside a single IndexedDB transaction (`store.update(fn)`), so a change is never half-moved (out of the outbox but not yet in `unsynced`) and two tabs cannot overwrite each other. The herd shown on screen is always `applyOutbox(herd, outbox)`: the server's rows with the queued changes laid on top (rows touched carry `pendingSync`). Removing an entry from the outbox therefore puts the server's version back on screen by itself. Where IndexedDB is unavailable the store is in memory and nothing is ever queued; the app then behaves as it did before this feature.
+
+**Writes** (`CattleService.write`). Online with an empty outbox, a change goes straight to the server as before (no `expectedUpdatedAt`: two online tabs still overwrite each other, last write wins), and the answer updates the saved herd. It is queued instead when the app is offline, when the request gets no answer, or when older changes are still queued (so order is kept). New animals always get their id in the browser (`newUuid`), online too, so a create whose answer was lost can be sent again.
+
+**An outbox entry** holds `type` (create, edit, delete), `cattleId`, `data` (the form's fields), `expectedUpdatedAt` (the saved row's `updatedAt` when the change was made), `weightDate` (the user's local date when the change was made; this is what dates the weighing, not the day of the sync), `queuedAt`, and counters. Deleting an animal that was added offline and never sent just removes its entries.
+
+**Replay** (`SyncEngine.replay`) runs when the browser reports a connection, at startup, right after a change is queued, on **Sync now**, and on a timer while something is waiting (a few quick tries after a failure, then every 30 seconds). It first asks `/api/auth/status` whose session this is and sends nothing unless it is the account the outbox belongs to. Then it sends entries oldest first, one at a time (a Web Lock keeps other tabs from replaying at the same moment):
+
+| The server's answer | What happens |
+|---|---|
+| Accepted | The entry leaves the outbox and the saved row becomes the server's. Later entries for the same animal are rebased onto the new `updatedAt` |
+| No answer: network error, 502/503/504, 401, 408, 429 | Replay **stops**. This entry and all later ones stay queued, in order |
+| Refused: 409 `stale` (changed elsewhere), duplicate cow number, validation, 404 (deleted elsewhere), demo limit, id not available | The server's version stands. The entry moves to `unsynced` with the reason, together with later entries for the same animal (they were made on top of it). Replay **continues** with other animals |
+| Server error (500) | Treated as no answer twice, refused on the third attempt, so one bad record cannot block the queue for good |
+
+Two answers are recognised as success although they look like failures, because a request can reach the server and lose its answer: a `DELETE` that gets 404 (already gone), and an edit that gets 409 `stale` while the server's row already holds every value the edit asked for. A repeated create is handled by the server (same id, same owner: 200).
+
+**Unsynced changes** are shown in the banner and in a dialog (`SyncController`, `SyncView`): what the user changed, the server's value beside it, why it was refused, and Apply again or Discard. Apply again goes through the normal form and write path as a new change (keeping the original `weightDate`); the entry is removed only after that change is saved or queued.
+
+**Accounts and privacy.** Signing out clears the record (after a warning when the outbox or unsynced list is not empty). At startup, a copy that belongs to a different user id is cleared before anything is shown, and the user is told if unsent changes went with it. A session that merely expired keeps the copy, so the same user's queued changes survive signing in again. With no connection at startup the app runs as the saved `user` without checking the session; the first request after reconnecting does. The saved herd is not encrypted.
+
+**Known limits.** An edit queued offline is compared with the server by `updatedAt` only, so any change to the animal in between counts as a conflict, even to a different field. A change made directly online carries no check. Calvings and other event records cannot be recorded offline.
+
+Server side this needs three optional things on `/api/cattle` (see `docs/api.md`, "Offline changes"): a client `id` on create, and `expectedUpdatedAt` on update and delete.

@@ -65,8 +65,9 @@ export class SettingsView {
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Working offline</h5>
-              <p class="mb-2">After a visit, this browser keeps a copy of the app's own pages and scripts, so the page can open without a connection.</p>
-              <p class="mb-0">Your cattle records are kept on the server, not in the browser. Signing in and viewing, adding, changing, or deleting records need a connection. Without one, the app says it can't reach the server; choose Retry once you are back online.</p>
+              <p class="mb-2">After a visit, this browser keeps a copy of the app's own pages and scripts, and of your herd, so the Dashboard and Cattle Records open without a connection.</p>
+              <p class="mb-2">While offline you can view, add, edit and delete cattle. Those changes are saved on this device and sent to the server when the connection returns; the bar under the top of the page shows how many are waiting. If the server can't accept one (for example, the animal was changed somewhere else in the meantime), the server's version is kept and your change is listed under <strong>Review</strong>, where you can apply it again or discard it.</p>
+              <p class="mb-0">Calving, weight, medical, breeding and financial records, reports, user management, signing in and changing your password need a connection. Signing out removes the copy of your herd from this device.</p>
             </div>
           </div>
         </div>

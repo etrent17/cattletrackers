@@ -1,5 +1,6 @@
 import { UsersView, plural } from "../views/UsersView.js";
 import { showToast } from "../utils/feedback.js";
+import { noteApiResult } from "../utils/connectivity.js";
 
 // The User Management screen (admins only): list users, add one, change a role,
 // delete one. CattleController.renderSecondaryView delegates the "users" view here.
@@ -18,6 +19,7 @@ async function request(path, { method = "GET", body } = {}) {
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
+    noteApiResult(false);
     throw Object.assign(new Error("Can't reach the server. Check your connection and try again."), { status: 0 });
   }
   if (res.status === 401) {
