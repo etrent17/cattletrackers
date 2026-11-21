@@ -133,6 +133,7 @@ export class CattleService {
   async write(op, send) {
     this.lastQueued = false;
     let queue = await this.sync.mustQueue();
+    let attempted = false;
     if (!queue) {
       let row;
       try {
@@ -142,6 +143,7 @@ export class CattleService {
         // right: replay recognises a change the server already has.
         if (!isUnreachable(err) || !this.sync.persistent) throw err;
         queue = true;
+        attempted = true;
       }
       if (!queue) {
         if (op.type === "delete") await this.sync.cacheRemove(op.cattleId);
@@ -149,7 +151,7 @@ export class CattleService {
       }
     }
     if (queue) {
-      await this.sync.enqueue(op);
+      await this.sync.enqueue({ ...op, attempted });
       this.lastQueued = true;
     }
     await this.refreshFromStore();

@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { useBrowser } = require('./helpers/browser');
+const { startCdn, launchWithCdn } = require('./helpers/cdn');
 const { createUser } = require('../test/helpers/api');
 
 const OWNER = 'offline@example.com';
@@ -416,75 +417,99 @@ describe('offline editing', () => {
     assert.equal(await page.locator('#sync-banner').isHidden(), true);
   });
 
-  // The app shell comes from the service worker here, so the page can be loaded with the network
-  // off. Bootstrap normally comes from a CDN that the worker caches when it installs; the test
-  // browser has no route to it (and Playwright cannot answer a worker's own requests), so the test
-  // puts those files into the worker's cache itself.
+  // The app shell comes from the real service worker here, so the page can be loaded with the
+  // network off. The worker fetches Bootstrap from the CDN when it installs; a local HTTPS server
+  // stands in for the CDN (helpers/cdn.js), so the worker's own requests, its cache and the app's
+  // content security policy are all exercised as in production.
   test('with the service worker: the app starts offline from the saved copy and says Offline', async () => {
-    const context = await session.openContext({ serviceWorkers: 'allow' });
-    const p = await session.newPage(context);
-    await session.signInExisting(OWNER, { page: p });
-    await p.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+    const cdn = await startCdn();
+    const browser = await launchWithCdn(cdn.port);
+    try {
+      const context = await browser.newContext({ serviceWorkers: 'allow', ignoreHTTPSErrors: true });
+      const p = await session.newPage(context);
+      await session.signInExisting(OWNER, { page: p });
+      await p.evaluate(() => navigator.serviceWorker.ready.then(() => true));
 
-    const dist = path.join(__dirname, '..', 'node_modules', 'bootstrap', 'dist');
-    await p.evaluate(async (files) => {
-      const [name] = await caches.keys();
-      const cache = await caches.open(name);
-      for (const { url, body, type } of files) await cache.put(url, new Response(body, { headers: { 'content-type': type } }));
-    }, [
-      { url: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css', type: 'text/css', body: fs.readFileSync(path.join(dist, 'css', 'bootstrap.min.css'), 'utf8') },
-      { url: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js', type: 'application/javascript', body: fs.readFileSync(path.join(dist, 'js', 'bootstrap.bundle.min.js'), 'utf8') },
-      { url: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css', type: 'text/css', body: '' },
-    ]);
+      // the worker keeps every file it promises to, the three CDN files, and no API answer
+      const cachedUrls = () => p.evaluate(async () => {
+        const names = await caches.keys();
+        const cache = names.length ? await caches.open(names[0]) : null;
+        return cache ? (await cache.keys()).map((r) => r.url) : [];
+      });
+      const cdnFiles = [
+        'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
+        'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
+      ];
+      const worker = fs.readFileSync(path.join(__dirname, '..', 'public', 'service-worker.js'), 'utf8');
+      const promised = [...worker.matchAll(/^\s+'(\/[^']*)',$/gm)].map((m) => m[1]);
+      assert.ok(promised.length > 40);
+      const wanted = [...promised.map((u) => `${session.baseUrl}${u}`), ...cdnFiles];
+      let cached = [];
+      for (let i = 0; i < 50 && !wanted.every((u) => cached.includes(u)); i += 1) {
+        await p.waitForTimeout(100);
+        cached = await cachedUrls();
+      }
+      assert.deepEqual(wanted.filter((u) => !cached.includes(u)), [], 'every promised file is cached');
+      assert.deepEqual(cached.filter((u) => new URL(u).pathname.startsWith('/api/')), []);
+      for (const url of promised) {
+        const file = url === '/' ? 'index.html' : url.slice(1);
+        assert.ok(
+          fs.existsSync(path.join(__dirname, '..', 'public', file)) || fs.existsSync(path.join(__dirname, '..', file)),
+          `${url} exists`
+        );
+      }
 
-    // every file the worker promises to cache is there, and no API answer is
-    const cached = await p.evaluate(async () => {
-      const cache = await caches.open((await caches.keys())[0]);
-      return (await cache.keys()).map((r) => new URL(r.url).pathname);
-    });
-    const worker = fs.readFileSync(path.join(__dirname, '..', 'public', 'service-worker.js'), 'utf8');
-    const promised = [...worker.matchAll(/^\s+'(\/[^']*)',$/gm)].map((m) => m[1]);
-    assert.ok(promised.length > 40);
-    for (const url of promised) assert.ok(cached.includes(url), `${url} is cached`);
-    assert.deepEqual(cached.filter((u) => u.startsWith('/api/')), []);
+      // online, with the worker now in charge of the page, everything still loads
+      await p.reload();
+      await p.locator('#stat-total').filter({ hasText: '3' }).waitFor();
+      assert.equal(await statusText(p).innerText(), 'Online');
+      assert.equal(await p.evaluate(() => typeof bootstrap), 'object');
 
-    // start with the network off
-    await context.setOffline(true);
-    await p.reload();
-    await p.locator('#stat-total').filter({ hasText: '3' }).waitFor();
-    assert.equal(await statusText(p).innerText(), 'Offline', 'the indicator is right when the app starts offline');
-    assert.match(await bannerText(p), /You're offline\. Showing the herd saved on this device/);
-    assert.equal(await p.locator('#error-banner').isHidden(), true);
-    await showView('cattle', p);
-    assert.deepEqual(await tags(p), ['CT-2', 'CT-50', 'CT-60']);
+      // start with the network off
+      const cdnRequests = cdn.requests.length;
+      await context.setOffline(true);
+      await p.reload();
+      await p.locator('#stat-total').filter({ hasText: '3' }).waitFor();
+      assert.equal(await statusText(p).innerText(), 'Offline', 'the indicator is right when the app starts offline');
+      assert.match(await bannerText(p), /You're offline\. Showing the herd saved on this device/);
+      assert.equal(await p.locator('#error-banner').isHidden(), true);
+      assert.equal(await p.evaluate(() => typeof bootstrap), 'object');
+      assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector('.navbar')).display), 'flex', 'Bootstrap styles came from the cache');
+      await showView('cattle', p);
+      assert.deepEqual(await tags(p), ['CT-2', 'CT-50', 'CT-60']);
 
-    // a cow added now survives another offline start
-    await addCow({ 'f-tag': 'CT-80', 'f-name': 'Added in the barn' }, p);
-    await toast('Saved on this device.', p);
-    await p.reload();
-    await p.locator('#stat-total').filter({ hasText: '4' }).waitFor();
-    assert.equal(await statusText(p).innerText(), 'Offline');
-    assert.match(await bannerText(p), /1 change waiting to sync\./);
-    await showView('cattle', p);
-    assert.equal(await row('CT-80', p).locator('.badge-pending-sync').count(), 1);
-    assert.equal(await cow('CT-80'), undefined);
+      // a cow added now survives another offline start
+      await addCow({ 'f-tag': 'CT-80', 'f-name': 'Added in the barn' }, p);
+      await toast('Saved on this device.', p);
+      await p.reload();
+      await p.locator('#stat-total').filter({ hasText: '4' }).waitFor();
+      assert.equal(await statusText(p).innerText(), 'Offline');
+      assert.match(await bannerText(p), /1 change waiting to sync\./);
+      await showView('cattle', p);
+      assert.equal(await row('CT-80', p).locator('.badge-pending-sync').count(), 1);
+      assert.equal(await cow('CT-80'), undefined);
+      assert.equal(cdn.requests.length, cdnRequests, 'nothing was fetched from the CDN while offline');
 
-    // and syncs when the connection returns
-    await goOnline(p);
-    await toast('1 change synced.', p);
-    assert.equal((await cow('CT-80')).name_breed, 'Added in the barn');
+      // and syncs when the connection returns
+      await goOnline(p);
+      await toast('1 change synced.', p);
+      assert.equal((await cow('CT-80')).name_breed, 'Added in the barn');
 
-    // after signing out there is nothing to show offline
-    await p.locator('#logout-btn').click();
-    await p.waitForURL('**/login.html');
-    await context.setOffline(true);
-    await p.goto(session.baseUrl);
-    await p.locator('#error-banner').waitFor({ state: 'visible' });
-    assert.match(await p.locator('#error-banner-text').innerText(), /Can't reach the server/);
-    assert.equal(await statusText(p).innerText(), 'Offline');
-    assert.equal(await p.locator('#list-body tr').count(), 0);
-    assert.equal(await p.locator('#stat-total').innerText(), '0');
-    await context.close();
+      // after signing out there is nothing to show offline
+      await p.locator('#logout-btn').click();
+      await p.waitForURL('**/login.html');
+      await context.setOffline(true);
+      await p.goto(session.baseUrl);
+      await p.locator('#error-banner').waitFor({ state: 'visible' });
+      assert.match(await p.locator('#error-banner-text').innerText(), /Can't reach the server/);
+      assert.equal(await statusText(p).innerText(), 'Offline');
+      assert.equal(await p.locator('#list-body tr').count(), 0);
+      assert.equal(await p.locator('#stat-total').innerText(), '0');
+    } finally {
+      await browser.close();
+      await cdn.close();
+    }
   });
 
   test('no page errors', () => {

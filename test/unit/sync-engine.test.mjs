@@ -753,6 +753,29 @@ describe('CattleService with the outbox', () => {
     assert.deepEqual(ctx.server.weighings, [{ cattleId: 'a', date: '2026-11-18', weight: 830 }]);
   });
 
+  test('an add whose answer was lost, then deleted offline: the delete is sent too', async () => {
+    const real = ctx.server.request;
+    let lose = true;
+    ctx.server.request = async (path, options = {}) => {
+      const result = await real(path, options);
+      if (lose && options.method === 'POST') {
+        lose = false;
+        throw fail(0, "Can't reach the server.", null); // saved on the server, answer lost
+      }
+      return result;
+    };
+    const cow = await service.addCattle(form({ tagNumber: 'CT-9' }));
+    assert.equal(service.lastQueued, true);
+    assert.equal(ctx.server.rows.has(cow.id), true);
+    ctx.env.online = false;
+    await service.deleteCattle(cow.id);
+    assert.deepEqual((await ctx.store.read()).outbox.map((o) => o.type), ['create', 'delete'], 'not cancelled: the server may have the animal');
+    ctx.env.online = true;
+    await ctx.engine.replay();
+    assert.equal(ctx.server.rows.has(cow.id), false);
+    assert.deepEqual((await ctx.store.read()).outbox, []);
+  });
+
   test('the connection drops during a save: the change is queued, not lost', async () => {
     ctx.server.down(1);
     await service.updateCattle('a', form({ tagNumber: 'CT-001', nameBreed: 'Daisy II' }));

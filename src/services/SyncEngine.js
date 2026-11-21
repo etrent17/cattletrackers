@@ -217,7 +217,8 @@ export class SyncEngine {
 
   // Adds a change to the outbox. Resolves to the op, or to null when the change cancelled out:
   // deleting an animal that was added here and never sent removes it from the queue instead.
-  async enqueue({ type, cattleId, data = null, weightDate = null }) {
+  // `attempted` says the change was already sent once without an answer, so the server may have it.
+  async enqueue({ type, cattleId, data = null, weightDate = null, attempted = false }) {
     if (!this.persistent) throw new Error("This browser can't keep changes offline. Reconnect and try again.");
     let op = null;
     await this.store.update((s) => {
@@ -237,7 +238,7 @@ export class SyncEngine {
         expectedUpdatedAt: type === "create" || earlier.length ? null : base?.updatedAt ?? null,
         weightDate: weightDate || this.today(),
         queuedAt: this.now(),
-        tries: 0,
+        tries: attempted ? 1 : 0,
         label: labelOf(data, labelOf(earlier.findLast((o) => o.data)?.data, labelOf(base))),
       };
       s.outbox.push(op);
