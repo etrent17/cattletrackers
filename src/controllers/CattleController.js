@@ -9,6 +9,8 @@ import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHel
 import { hideErrorBanner, showErrorBanner, showToast } from "../utils/feedback.js";
 import { escapeHtml } from "../utils/escapeHtml.js";
 import { CalvingController } from "./CalvingController.js";
+import { TreatmentController } from "./TreatmentController.js";
+import { withdrawalBadge } from "../views/TreatmentView.js";
 
 export class CattleController {
   constructor() {
@@ -29,8 +31,9 @@ export class CattleController {
       openCowDetails: (id, tabId) => this.handleInspect(id, tabId),
     };
     this.calvingController = new CalvingController(host);
+    this.treatmentController = new TreatmentController(host);
     // view name -> controller with init(), show(), hide(), render(), detailTab()
-    this.recordPages = { calving: this.calvingController };
+    this.recordPages = { calving: this.calvingController, medical: this.treatmentController };
     // Tabs after "Details" in the cow details modal: { id, label, appliesTo?(cow), render(cow, pane) }
     this.detailTabs = Object.values(this.recordPages).map((page) => page.detailTab());
     this.financeController = new FinanceController({ cattleService: this.cattleService, getCurrentView: () => this.currentView });
@@ -253,7 +256,8 @@ export class CattleController {
         <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</li>
         <li class="list-group-item"><strong>Last Calving:</strong> ${escapeHtml(c.lastCalvingDate || "N/A")}</li>
         <li class="list-group-item"><strong>Expected Calving:</strong> ${escapeHtml(c.expectedCalvingDate || "N/A")}</li>
-        <li class="list-group-item"><strong>Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
+        <li class="list-group-item"><strong>Current Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
+        <li class="list-group-item"><strong>Withdrawal Period:</strong> ${withdrawalBadge(c) || escapeHtml(c.withdrawalUntil ? `Ended ${c.withdrawalUntil}` : "None")}</li>
         <li class="list-group-item"><strong>Status:</strong> <span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></li>
         <li class="list-group-item"><strong>Notes:</strong> ${escapeHtml(c.notes || "No notes recorded.")}</li>
       </ul>
