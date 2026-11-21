@@ -1,0 +1,57 @@
+# Cattle Trackers for a dev/test Docker host, using the pre-built image from
+# GitHub Packages. No source checkout needed: copy this file (or paste it into a
+# Portainer-style stack), set the two required variables, and start it.
+#
+#   SESSION_SECRET=$(openssl rand -hex 32) DB_PASSWORD=$(openssl rand -hex 24) \
+#     docker compose -f docker-compose.dev.yml up -d
+#
+# Then open http://<host>:3036 and create the first admin account, or use
+# "Try the live demo" (DEMO_MODE defaults to true here).
+#
+# Tags: dev = latest integrated work (all finished features), latest = main.
+# Update to a newer build:  docker compose -f docker-compose.dev.yml pull && \
+#                           docker compose -f docker-compose.dev.yml up -d
+name: cattletrackers-dev
+
+services:
+  app:
+    image: ghcr.io/etrent17/cattletrackers:${IMAGE_TAG:-dev}
+    pull_policy: always
+    ports:
+      - "${APP_PORT:-3036}:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: postgres://cattle:${DB_PASSWORD:?set DB_PASSWORD}@db:5432/cattle
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      DEMO_MODE: ${DEMO_MODE:-true}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cattle
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      POSTGRES_DB: cattle
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cattle -d cattle"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  pgdata:
