@@ -129,6 +129,7 @@ forCattle.post('/', cattleId, rules, createRules, validate, async (req, res) => 
         gender: b.calfSex,
         birthDate: b.calvingDate.slice(0, 10),
         weight: b.birthWeight,
+        weightDate: b.calvingDate.slice(0, 10), // the birth weight becomes the calf's first weighing
         notes: `Calf of ${cow.tag_number}.`,
       });
     }

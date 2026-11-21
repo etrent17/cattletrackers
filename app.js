@@ -77,6 +77,9 @@ app.use('/api/users', require('./routes/users'));
 const calvings = require('./routes/calvings');
 app.use('/api/cattle/:cattleId/calvings', calvings.forCattle);
 app.use('/api/calvings', calvings.router);
+const weighings = require('./routes/weighings');
+app.use('/api/cattle/:cattleId/weighings', weighings.forCattle);
+app.use('/api/weighings', weighings.router);
 app.use('/api/cattle', require('./routes/cattle'));
 app.use('/api/transactions', require('./routes/transactions'));
 

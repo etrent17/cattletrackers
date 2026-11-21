@@ -13,6 +13,7 @@ async function initSchema() {
   await coreSchema();
   await calvingSchema();
   await initTransactionsSchema();
+  await weighingSchema();
 }
 
 async function coreSchema() {
@@ -103,6 +104,41 @@ async function initTransactionsSchema() {
   `);
 }
 // --- end financial records --------------------------------------------------
+
+// --- Weight tracking (feature 10) -----------------------------------------------------------
+// cattle.weight is kept equal to the newest weighing (latest date, then latest created_at; NULL
+// when there are none); lib/weights.js syncWeight() runs in the same transaction as every change.
+// Weights are in lbs. The API allows 0.01 to 5000; the CHECK only refuses what can never be a
+// weight, so a legacy value above 5000 is carried over instead of stopping the server.
+async function weighingSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS weighings (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      cattle_id UUID NOT NULL REFERENCES cattle(id) ON DELETE CASCADE,
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      weight NUMERIC(7,2) NOT NULL CHECK (weight > 0),
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS weighings_cattle_idx ON weighings (cattle_id, date DESC);
+    CREATE INDEX IF NOT EXISTS weighings_owner_idx ON weighings (owner_id, date DESC);
+  `);
+  // A weight of 0 (or less) was never a real weight: the API used to accept 0 by mistake. It means
+  // "no weight", so it is cleared rather than imported. Repeating this changes nothing.
+  await pool.query('UPDATE cattle SET weight = NULL WHERE weight <= 0');
+  // One-time migration: an animal that has a weight but no weighings gets one weighing for it,
+  // dated at the record's last update. It cannot repeat: once an animal has weighings the guard
+  // is false, and when its last weighing is deleted syncWeight() clears the weight too.
+  await pool.query(`
+    INSERT INTO weighings (cattle_id, owner_id, date, weight, notes)
+    SELECT c.id, c.owner_id, c.updated_at::date, c.weight, 'Imported from the weight on the animal record.'
+    FROM cattle c
+    WHERE c.weight IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM weighings w WHERE w.cattle_id = c.id)
+  `);
+}
+// --- end weight tracking --------------------------------------------------------------------
 
 async function cleanupDemoUsers(hours = 4) {
   const result = await pool.query(
