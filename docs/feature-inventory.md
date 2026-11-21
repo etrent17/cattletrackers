@@ -35,8 +35,9 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 |---|---|---|---|
 | Statistics cards | `DashboardView.renderStats` | Defective | `getStatistics()` added in `e8d97e1`, but card IDs do not match |
 | Recent cattle table | `DashboardView.renderRecentTable` | Defective | ID mismatch |
-| Upcoming events and alerts | `DashboardView.renderEventsAndAlerts` | Defective | ID mismatch; no alerts container exists |
-| Calving, Medical, Breeding views | `renderFilteredSubView` | Partial | Filtered copies of the cattle list, not separate event histories |
+| Upcoming events and alerts | `DashboardView.renderUpcomingEvents`, `DashboardView.renderAlerts` | Implemented | Alerts list (`#alerts-list`) under Upcoming Events; each feature owns its alerts. Shows overdue treatments |
+| Scheduled Treatments card | `DashboardView.renderTreatmentsDue`, `TreatmentController` | Implemented | Open treatment follow-ups due within 7 days, overdue included |
+| Medical records | nav item `medical`, `routes/treatments.js`, `TreatmentController` | Implemented | Treatments, vaccinations, vet visits per animal; Upcoming and overdue follow-ups; withdrawal periods with a badge in the cattle tables and details; Treatments tab in the cow details |
 | Breeding records (Breeding History page) | `routes/breedings.js`, `routes/pregnancy-checks.js`, `BreedingController` | Implemented | Replaces the Breeding filtered view (feature 09): breedings and pregnancy checks with add/edit/delete, needs-check list, sire picker of the herd's bulls, Breeding tab in the cow details; recording a breeding fills the expected calving date, a check sets or clears Pregnant. Tested by `test/api/breedings.test.js`, `test/api/pregnancy-checks.test.js`, `e2e/breeding.e2e.js` |
 | Weight tracking | nav item `weights`, `routes/weighings.js`, `WeightController.js` | Implemented | Weighing history per animal (lbs); batch entry for many animals on one date with per-row results; cow details tab with chart and average daily gain; the animal's weight is its newest weighing. Tested by API, unit and browser tests. kg not supported yet |
 | One-view-at-a-time navigation | `public/styles.css` | Implemented | Added in `29162f2` |

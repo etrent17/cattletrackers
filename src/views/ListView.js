@@ -1,5 +1,6 @@
 import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
 import { escapeHtml } from "../utils/escapeHtml.js";
+import { withdrawalBadge } from "./TreatmentView.js";
 
 export class ListView {
   renderList(cattleList, title = "All Cattle Records") {
@@ -29,7 +30,7 @@ export class ListView {
         return `
           <tr>
             <td><span class="badge badge-cow">${escapeHtml(c.tagNumber)}</span></td>
-            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")}</td>
+            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")} ${withdrawalBadge(c)}</td>
             <td>${genderHtml}</td>
             <td>${escapeHtml(c.birthDate || "—")}<br><small class="text-muted">${escapeHtml(calculateAge(c.birthDate))}</small></td>
             <td>${calvingInfo}</td>

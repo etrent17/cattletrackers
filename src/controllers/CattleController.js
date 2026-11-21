@@ -9,6 +9,8 @@ import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHel
 import { hideErrorBanner, showErrorBanner, showToast } from "../utils/feedback.js";
 import { escapeHtml } from "../utils/escapeHtml.js";
 import { CalvingController } from "./CalvingController.js";
+import { TreatmentController } from "./TreatmentController.js";
+import { withdrawalBadge } from "../views/TreatmentView.js";
 import { BreedingController } from "./BreedingController.js";
 import { WeightController } from "./WeightController.js";
 
@@ -31,9 +33,15 @@ export class CattleController {
       openCowDetails: (id, tabId) => this.handleInspect(id, tabId),
     };
     this.calvingController = new CalvingController(host);
+    this.treatmentController = new TreatmentController(host);
     this.breedingController = new BreedingController(host);
     // view name -> controller with init(), show(), hide(), render(), detailTab()
-    this.recordPages = { calving: this.calvingController, breeding: this.breedingController, weights: new WeightController(host) };
+    this.recordPages = {
+      calving: this.calvingController,
+      medical: this.treatmentController,
+      breeding: this.breedingController,
+      weights: new WeightController(host),
+    };
     // Tabs after "Details" in the cow details modal: { id, label, appliesTo?(cow), render(cow, pane) }
     this.detailTabs = Object.values(this.recordPages).map((page) => page.detailTab());
     this.financeController = new FinanceController({ cattleService: this.cattleService, getCurrentView: () => this.currentView });
@@ -125,7 +133,7 @@ export class CattleController {
     } else if (viewName === "dashboard") {
       document.getElementById("view-dashboard").classList.add("active");
       this.refreshAllViews();
-    } else if (["cattle", "medical", "breeding"].includes(viewName)) {
+    } else if (viewName === "cattle") {
       document.getElementById("view-cattle").classList.add("active");
       this.renderCattleList();
     } else {
@@ -134,18 +142,12 @@ export class CattleController {
     }
   }
 
-  // Renders the cattle table for the current list view (All, Medical, Breeding),
+  // Renders the All Cattle table,
   // narrowed by the search box and status filter.
   renderCattleList() {
-    const subViews = {
-      medical: { title: "Medical & Health Records", filter: (c) => c.medications || c.healthStatus !== "healthy" },
-      breeding: { title: "Breeding History", filter: (c) => c.healthStatus === "pregnant" || c.expectedCalvingDate },
-    };
-    const { title, filter } = subViews[this.currentView] || { title: "All Cattle Records", filter: () => true };
     const query = document.getElementById("search-cattle")?.value || "";
     const status = document.getElementById("filter-status")?.value || "all";
-    const matches = this.cattleService.searchCattle(query, status).filter(filter);
-    this.listView.renderList(matches, title);
+    this.listView.renderList(this.cattleService.searchCattle(query, status), "All Cattle Records");
   }
 
   renderSecondaryView(viewName) {
@@ -256,7 +258,8 @@ export class CattleController {
         <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</li>
         <li class="list-group-item"><strong>Last Calving:</strong> ${escapeHtml(c.lastCalvingDate || "N/A")}</li>
         <li class="list-group-item"><strong>Expected Calving:</strong> ${escapeHtml(c.expectedCalvingDate || "N/A")}</li>
-        <li class="list-group-item"><strong>Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
+        <li class="list-group-item"><strong>Current Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
+        <li class="list-group-item"><strong>Withdrawal Period:</strong> ${withdrawalBadge(c) || escapeHtml(c.withdrawalUntil ? `Ended ${c.withdrawalUntil}` : "None")}</li>
         <li class="list-group-item"><strong>Status:</strong> <span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></li>
         <li class="list-group-item"><strong>Notes:</strong> ${escapeHtml(c.notes || "No notes recorded.")}</li>
       </ul>

@@ -1,5 +1,6 @@
 import { formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
 import { escapeHtml } from "../utils/escapeHtml.js";
+import { withdrawalBadge } from "./TreatmentView.js";
 
 export class DashboardView {
   renderStats(stats) {
@@ -9,7 +10,7 @@ export class DashboardView {
     };
     set("stat-total", stats.total);
     set("stat-calving", stats.calvingThisMonth);
-    set("stat-treatments", stats.scheduledTreatments);
+    // stat-treatments is drawn by renderTreatmentsDue from the treatment schedule (feature 08).
     set("stat-healthy", stats.healthy);
   }
 
@@ -30,7 +31,7 @@ export class DashboardView {
         return `
           <tr>
             <td><span class="badge badge-cow">${escapeHtml(c.tagNumber)}</span></td>
-            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")}</td>
+            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")} ${withdrawalBadge(c)}</td>
             <td>${genderHtml}</td>
             <td>${c.gender === "male" ? "N/A" : escapeHtml(c.lastCalvingDate || "—")}</td>
             <td>${escapeHtml(c.medications || "None")}</td>
@@ -66,5 +67,54 @@ export class DashboardView {
             )
             .join("")
         : `<li class="list-group-item text-muted">No upcoming calvings.</li>`;
+  }
+
+  // Scheduled Treatments card: open follow-ups that are overdue or due within the next 7 days
+  // (TreatmentController). `null` while the schedule is not loaded or could not be loaded.
+  renderTreatmentsDue(summary) {
+    const valueEl = document.getElementById("stat-treatments");
+    const noteEl = document.getElementById("stat-treatments-note");
+    if (valueEl) valueEl.textContent = summary ? summary.scheduled : "—";
+    if (noteEl) {
+      noteEl.textContent = summary && summary.overdue
+        ? `Due within 7 days, incl. ${summary.overdue} overdue`
+        : "Due within 7 days, incl. overdue";
+    }
+  }
+
+  // The dashboard alerts list. Each feature owns the alerts it passes as `source`; calling again
+  // replaces that feature's alerts and leaves the others'. An alert is
+  // { icon, title, detail, badge?, badgeClass?, cattleId?, buttonClass? }: with a cattle id it gets
+  // a View button (class `buttonClass`, default `btn-view`, with the id in data-id and data-cattle-id).
+  renderAlerts(source, alerts) {
+    const listEl = document.getElementById("alerts-list");
+    if (!listEl) return;
+    for (const el of listEl.querySelectorAll("[data-alert-source]")) {
+      if (el.dataset.alertSource === source) el.remove();
+    }
+    listEl.querySelector(".alerts-empty")?.remove();
+    listEl.insertAdjacentHTML(
+      "beforeend",
+      alerts
+        .map((a) => {
+          const badge = a.badge ? `<span class="badge ${escapeHtml(a.badgeClass || "bg-secondary")} rounded-pill">${escapeHtml(a.badge)}</span>` : "";
+          const button = a.cattleId
+            ? `<button type="button" class="btn btn-sm btn-outline-secondary ${escapeHtml(a.buttonClass || "btn-view")}" data-id="${escapeHtml(a.cattleId)}" data-cattle-id="${escapeHtml(a.cattleId)}">View</button>`
+            : "";
+          return `
+            <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2" data-alert-source="${escapeHtml(source)}">
+              <div>
+                <i class="${escapeHtml(a.icon || "fas fa-exclamation-triangle text-warning")} me-2"></i>
+                <strong>${escapeHtml(a.title)}</strong><br>
+                <small class="text-muted">${escapeHtml(a.detail || "")}</small>
+              </div>
+              <div class="d-flex align-items-center gap-2">${badge}${button}</div>
+            </li>`;
+        })
+        .join("")
+    );
+    if (!listEl.querySelector("[data-alert-source]")) {
+      listEl.innerHTML = '<li class="list-group-item text-muted alerts-empty">No alerts.</li>';
+    }
   }
 }

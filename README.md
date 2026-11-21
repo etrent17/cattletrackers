@@ -2,23 +2,25 @@
 
 Cattle Trackers is a livestock management web application: an Express server, a PostgreSQL database, a REST API, and a Bootstrap-based browser interface written as ES modules.
 
-> **Status: early prototype.** These docs describe the source at commit `7fb8152`. Nothing has been verified by browser testing yet. Read [known issues](docs/known-issues.md) before relying on any workflow.
+> **Status: prototype under active development.** Features are built on their own branches (see the [roadmap](docs/roadmap.md)) and covered by automated unit, API, and browser tests. Read [known issues](docs/known-issues.md) before relying on any workflow.
 
 ## What exists today
 
 - Admin account setup, login, logout, and an optional temporary demo mode
 - Per-user cattle records: add, view, edit, delete, search, and filter by health status
 - Calving records: a dated calving history per cow, a herd-wide Calving Records page, and adding the calf as a new animal
-- A dashboard, plus medical and breeding views that filter the cattle list
+- Medical records: treatments, vaccinations and vet visits, with upcoming and overdue follow-ups and withdrawal-period markers
+- Breeding records: breedings and pregnancy checks, with the expected calving date worked out automatically and a "needs pregnancy check" list
+- Weight tracking: weighing history, batch entry, a weight chart and average daily gain per animal
+- A dashboard with herd statistics, upcoming calvings, treatments due, and alerts
 - Financial records (income and expenses, optionally per animal) with CSV export, and a Financial Reports page
-- An admin-only user-management API
+- User management for admins (add, remove, change roles), and a settings page with password change
 - A Docker-based installer
 - Automated tests (unit, API, and a browser smoke test) that also run on GitHub for every push and pull request
 
 ## What does not exist yet
 
 - Distinct performance or health reports (those screens are placeholders)
-- A user-management screen
 - Offline editing of cattle data
 
 ## Quick start

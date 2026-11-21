@@ -45,6 +45,8 @@ A wrong current password answers 400, not 401, because the browser treats 401 as
 
 Fields: `tagNumber` (required, 1 to 25 characters), `nameBreed` (max 100), `gender` (`female` or `male`), `birthDate`, `lastCalvingDate`, `expectedCalvingDate` (ISO 8601), `weight` (lbs, 0.01 to 5000; `0` is refused with `Invalid weight`, while `""` or `null` mean no weight), `weightDate` (see above), `medications` (max 500), `healthStatus` (`healthy`, `under_treatment`, `quarantine`, `pregnant`), `notes` (max 2000).
 
+Each animal is also returned with `withdrawalUntil`: the latest withdrawal date of its treatments, or `""` (see Treatments). It is read-only; `POST` and `PUT` ignore it.
+
 A duplicate cow number returns 409 `Duplicate cow number`. `:id` must be a UUID.
 
 ## Transactions (`/api/transactions`, sign-in required)
@@ -186,6 +188,27 @@ Otherwise each row is judged on its own: every valid row is saved and every inva
 
 `index` is the row's position in `rows`. Row errors: `Invalid row` (not an object), `Choose an animal` (missing or malformed `cattleId`), `Invalid weight`, `Notes are too long`, `This animal is already in the batch` (the second row for the same animal), `Animal not found` (no such animal in your herd, including another user's).
 
+## Treatments (sign-in required)
+
+Medical records: treatments, vaccinations and vet visits.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/treatments` | Every treatment in your herd, newest date given first |
+| GET | `/api/treatments/due` | Open follow-ups (see below), soonest next due date first, overdue ones included. Optional `until=YYYY-MM-DD` keeps those due on or before that date (400 `Enter a valid date` if malformed) |
+| GET | `/api/cattle/:cattleId/treatments` | One animal's treatments, newest first; 404 `Cattle not found` if the animal is not yours |
+| POST | `/api/cattle/:cattleId/treatments` | Records a treatment; 201. 404 if the animal is not yours |
+| PUT | `/api/treatments/:id` | Replaces the treatment's fields (fields left out are cleared); 404 `Treatment not found` if not yours. The animal cannot be changed |
+| DELETE | `/api/treatments/:id` | Deletes the treatment; 404 if not yours |
+
+Fields: `dateGiven` (required, ISO 8601, not in the future), `type` (required: `treatment`, `vaccination`, `vet_visit`, `other`), `product` (max 100), `dose` (max 50), `route` (max 50), `givenBy` (max 100), `nextDueDate` (ISO 8601, after `dateGiven`), `withdrawalUntil` (ISO 8601, on or after `dateGiven`), `notes` (max 2000). Text is trimmed. Everything but the date and type is optional and comes back as `""` when not recorded.
+
+Each treatment is returned as `{ id, cattleId, cattleTag, cattleName, dateGiven, type, product, dose, route, givenBy, nextDueDate, withdrawalUntil, notes, createdAt }`.
+
+**Follow-ups.** A treatment with a `nextDueDate` is open until a later treatment of the same animal, the same `type` and the same `product` (ignoring case and surrounding spaces) is recorded; "later" means a later `dateGiven`, or the same date entered afterwards. Recording the follow-up therefore closes the earlier one without changing it, and deleting the follow-up reopens it. Clearing `nextDueDate` dismisses a follow-up. The server does not decide what is overdue: the browser compares `nextDueDate` with the user's own calendar date.
+
+**Withdrawal.** After every create, update and delete, the animal's `withdrawalUntil` is set to the latest `withdrawalUntil` of its treatments (empty when none has one), in the same transaction. The app treats an animal as in a withdrawal period while that date is today or later. Deleting an animal deletes its treatments.
+
 ## Not available
 
-There are no performance-report, health-report, or treatment endpoints.
+There are no performance-report or health-report endpoints.

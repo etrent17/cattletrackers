@@ -36,7 +36,7 @@ aside .nav-link.active {
   font-weight: 600;
 }
 
-.table-responsive { background: #fff; border-radius: .5rem; }
+.table-responsive { position: relative; background: #fff; border-radius: .5rem; } /* keeps visually-hidden spans inside the scroll area on phones */
 .table { margin-bottom: 0; }
 .badge-cow { background: var(--green-100); color: var(--green-900); }
 .status-indicator {

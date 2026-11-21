@@ -17,12 +17,7 @@ Computed by `CattleService.getStatistics()` in the browser from the loaded cattl
 
 **Calving Records** is a page of its own. At the top it lists upcoming expected calvings (female or unspecified animals whose expected calving date is today or later, soonest first), each with a Record calving button. Below is the herd's calving history, newest first, with a search box (cow number or name, calf number, notes) and filters for outcome and year. Each cow's own history is on the Calving history tab of her details.
 
-The other two reuse the cattle table with a filter:
-
-- **Medical Records**: animals with medications or a status other than Healthy
-- **Breeding History**: animals that are Pregnant or have an expected calving date
-
-These two show current field values only. There is no history of past treatments or breedings yet.
+**Medical Records** and **Breeding History** are pages of their own too, built the same way: a herd-wide history with search, plus a list of what needs attention (treatments due or overdue; cows bred more than 35 days ago without a pregnancy check). Each animal's own history is on a tab of its details. **Weights** has a batch-entry form and a herd-wide weighing history. See the [user guide](user-guide.md) for each page.
 
 ## Report pages
 

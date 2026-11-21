@@ -58,8 +58,9 @@ describe('create and read', () => {
     const list = await client.get('/api/cattle').expect(200);
     assert.equal(list.body.length, 1);
     for (const record of [created.body, list.body[0]]) {
-      const { id, createdAt, updatedAt, ...rest } = record;
+      const { id, createdAt, updatedAt, withdrawalUntil, ...rest } = record;
       assert.deepEqual(rest, FULL);
+      assert.equal(withdrawalUntil, '', 'no treatments, no withdrawal period');
       assert.ok(id && createdAt && updatedAt);
     }
   });

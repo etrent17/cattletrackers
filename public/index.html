@@ -59,7 +59,7 @@
           <div class="row g-3 mb-4">
             <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-total">0</div>Total Cattle</div></div>
             <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-calving">0</div>Calving This Month</div></div>
-            <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-treatments">0</div>Scheduled Treatments</div></div>
+            <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-treatments">0</div>Scheduled Treatments<div class="small text-muted" id="stat-treatments-note">Due within 7 days, incl. overdue</div></div></div>
             <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-healthy">0</div>Healthy Animals</div></div>
           </div>
           <h4>Recent Cattle Records</h4>
@@ -71,6 +71,8 @@
           </div>
           <h4>Upcoming Events</h4>
           <ul id="events-list" class="list-group"></ul>
+          <h4 class="mt-4">Alerts</h4>
+          <ul id="alerts-list" class="list-group"><li class="list-group-item text-muted alerts-empty">No alerts.</li></ul>
         </section>
 
         <section id="view-cattle" class="app-view">
@@ -203,6 +205,39 @@
           <p id="weights-count" class="text-muted small mt-2"></p>
         </section>
 
+        <!-- Medical Records page (src/controllers/TreatmentController.js) -->
+        <section id="view-medical" class="app-view">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="mb-0">Medical Records</h2>
+            <button type="button" class="btn btn-success btn-treatment-add">Record Treatment</button>
+          </div>
+          <h4>Upcoming and Overdue</h4>
+          <ul id="treatment-due" class="list-group mb-4"></ul>
+          <h4>Withdrawal Periods</h4>
+          <ul id="treatment-withdrawals" class="list-group mb-4"></ul>
+          <h4>Treatment History</h4>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6"><input id="treatment-search" class="form-control" type="search" placeholder="Search by animal, product, given by, or notes" aria-label="Search treatments"></div>
+            <div class="col-md-3">
+              <select id="treatment-filter-type" class="form-select" aria-label="Filter by type">
+                <option value="all">All Types</option>
+                <option value="treatment">Treatment</option>
+                <option value="vaccination">Vaccination</option>
+                <option value="vet_visit">Vet visit</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Date</th><th>Animal</th><th>Type</th><th>Product</th><th>Given By</th><th>Next Due</th><th>Withdrawal Until</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="treatment-body"></tbody>
+            </table>
+          </div>
+          <p id="treatment-empty" class="text-muted mt-2" hidden>No treatments recorded yet.</p>
+          <p id="treatment-count" class="text-muted small mt-2"></p>
+        </section>
+
         <section id="view-secondary" class="app-view">
           <h2 id="secondary-view-title">Overview</h2>
           <div id="secondary-view-body"></div>
@@ -228,7 +263,7 @@
             <div class="col-md-4"><label class="form-label" for="f-weight">Weight (lbs)</label><input id="f-weight" type="number" min="0" max="5000" step="0.1" class="form-control" aria-describedby="f-weight-help"><div id="f-weight-help" class="form-text"></div></div>
             <div class="col-md-6"><label class="form-label" for="f-last-calving">Last Calving Date</label><input id="f-last-calving" type="date" class="form-control" aria-describedby="f-last-calving-help"><div id="f-last-calving-help" class="form-text"></div></div>
             <div class="col-md-6"><label class="form-label" for="f-expected-calving">Expected Calving Date</label><input id="f-expected-calving" type="date" class="form-control" aria-describedby="f-expected-calving-help"><div id="f-expected-calving-help" class="form-text">Filled in when a breeding is recorded. You can change it.</div></div>
-            <div class="col-md-6"><label class="form-label" for="f-meds">Current Medications</label><input id="f-meds" class="form-control" maxlength="500"></div>
+            <div class="col-md-6"><label class="form-label" for="f-meds">Current Medications</label><input id="f-meds" class="form-control" maxlength="500" aria-describedby="f-meds-help"><div id="f-meds-help" class="form-text">A short note of what the animal is on now. Record dated treatments in Medical Records.</div></div>
             <div class="col-md-6"><label class="form-label" for="f-status">Health Status</label>
               <select id="f-status" class="form-select">
                 <option value="healthy">Healthy</option><option value="under_treatment">Under Treatment</option>
@@ -364,6 +399,41 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-success">Save Weighing</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record / edit a treatment (src/views/TreatmentView.js) -->
+  <div class="modal fade" id="treatmentModal" tabindex="-1" aria-labelledby="treatmentModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form id="treatment-form" class="modal-content" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="treatmentModalTitle">Record Treatment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-8"><label class="form-label" for="tr-cow">Animal</label><select id="tr-cow" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label" for="tr-date">Date Given</label><input id="tr-date" type="date" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label" for="tr-type">Type</label>
+              <select id="tr-type" class="form-select"><option value="treatment">Treatment</option><option value="vaccination">Vaccination</option><option value="vet_visit">Vet visit</option><option value="other">Other</option></select></div>
+            <div class="col-md-8"><label class="form-label" for="tr-product">Product</label>
+              <input id="tr-product" class="form-control" maxlength="100" list="tr-product-list" autocomplete="off"><datalist id="tr-product-list"></datalist></div>
+            <div class="col-md-4"><label class="form-label" for="tr-dose">Dose</label><input id="tr-dose" class="form-control" maxlength="50" placeholder="e.g. 10 mL"></div>
+            <div class="col-md-4"><label class="form-label" for="tr-route">Route</label>
+              <input id="tr-route" class="form-control" maxlength="50" list="tr-route-list" autocomplete="off"><datalist id="tr-route-list"></datalist></div>
+            <div class="col-md-4"><label class="form-label" for="tr-given-by">Given By</label><input id="tr-given-by" class="form-control" maxlength="100"></div>
+            <div class="col-md-6"><label class="form-label" for="tr-next-due">Next Due Date</label><input id="tr-next-due" type="date" class="form-control" aria-describedby="tr-next-due-help">
+              <div id="tr-next-due-help" class="form-text">For a booster or follow-up. It shows under Upcoming until a later treatment of the same type and product is recorded for this animal.</div></div>
+            <div class="col-md-6"><label class="form-label" for="tr-withdrawal">Withdrawal Until</label><input id="tr-withdrawal" type="date" class="form-control" aria-describedby="tr-withdrawal-help">
+              <div id="tr-withdrawal-help" class="form-text">Last day of the meat or milk withdrawal period from the product label. The animal is marked until then.</div></div>
+            <div class="col-12"><label class="form-label" for="tr-notes">Notes</label><textarea id="tr-notes" class="form-control" rows="2" maxlength="2000"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Treatment</button>
         </div>
       </form>
     </div>
