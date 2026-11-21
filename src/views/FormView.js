@@ -32,7 +32,7 @@ export class FormView {
   populateForm(cattle) {
     document.getElementById("f-tag").value = cattle.tagNumber || "";
     document.getElementById("f-name").value = cattle.nameBreed || "";
-    document.getElementById("f-gender").value = cattle.gender || "female";
+    document.getElementById("f-gender").value = cattle.gender || "";
     document.getElementById("f-birth").value = cattle.birthDate || "";
     document.getElementById("f-weight").value = cattle.weight ?? "";
     document.getElementById("f-last-calving").value = cattle.lastCalvingDate || "";
