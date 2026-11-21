@@ -35,8 +35,10 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 |---|---|---|---|
 | Statistics cards | `DashboardView.renderStats` | Defective | `getStatistics()` added in `e8d97e1`, but card IDs do not match |
 | Recent cattle table | `DashboardView.renderRecentTable` | Defective | ID mismatch |
-| Upcoming events and alerts | `DashboardView.renderEventsAndAlerts` | Defective | ID mismatch; no alerts container exists |
-| Calving, Medical, Breeding views | `renderFilteredSubView` | Partial | Filtered copies of the cattle list, not separate event histories |
+| Upcoming events and alerts | `DashboardView.renderUpcomingEvents`, `DashboardView.renderAlerts` | Implemented | Alerts list (`#alerts-list`) under Upcoming Events; each feature owns its alerts. Shows overdue treatments |
+| Scheduled Treatments card | `DashboardView.renderTreatmentsDue`, `TreatmentController` | Implemented | Open treatment follow-ups due within 7 days, overdue included |
+| Calving, Breeding views | `renderFilteredSubView` | Partial | Filtered copies of the cattle list, not separate event histories |
+| Medical records | nav item `medical`, `routes/treatments.js`, `TreatmentController` | Implemented | Treatments, vaccinations, vet visits per animal; Upcoming and overdue follow-ups; withdrawal periods with a badge in the cattle tables and details; Treatments tab in the cow details |
 | One-view-at-a-time navigation | `public/styles.css` | Implemented | Added in `29162f2` |
 
 ## Reports, settings, finance

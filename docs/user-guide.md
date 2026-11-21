@@ -41,7 +41,7 @@ On Cattle Records, type in the search box to match cow number, name/breed, medic
 | Weight (lbs) | Greater than 0, at most 5000 |
 | Last Calving Date | Date. For a new cow it is saved as her first calving record. After that it is read-only and always shows her most recent calving record |
 | Expected Calving Date | Date |
-| Current Medications | Up to 500 characters |
+| Current Medications | Up to 500 characters. A short free-text note of what the animal is on now; dated treatments go in Medical Records |
 | Health Status | Healthy, Under Treatment, In Quarantine, or Pregnant |
 | Additional Notes | Up to 2000 characters |
 
@@ -55,6 +55,20 @@ Open **Calving Records** in the sidebar, or the **Calving history** tab in a cow
 - **Edit or delete** a calving with the buttons on its row. Deleting a calving does not delete the calf's own record.
 
 The cow's Last Calving Date always shows her most recent calving. Deleting a cow deletes her calving records.
+
+## Medical records
+
+Open **Medical Records** in the sidebar, or the **Treatments** tab in an animal's details (the eye button).
+
+- **Record a treatment**: click Record Treatment (or Record treatment on the Treatments tab), choose the animal, the date given (today by default, not in the future) and the type: Treatment, Vaccination, Vet visit or Other. Product, dose, route, given by, next due date, withdrawal date and notes are optional. Products you used before and common routes are suggested as you type.
+- **Next due date**: set it for a booster or follow-up; it must be after the date given. The treatment then appears under **Upcoming and Overdue**, soonest first, marked "3 days overdue", "Due today", "Due tomorrow" or "Due in N days".
+- **Record follow-up** beside an upcoming treatment opens the form with the same animal, type, product, dose, route and person, dated today. Saving it (with its own next due date if there is another one) removes the earlier one from Upcoming; in the history that row's Next Due shows "Done". Any later treatment of the same animal with the same type and product counts as the follow-up, however it is recorded. To drop a follow-up without recording one, edit the treatment and clear its next due date.
+- **Withdrawal until**: the last day the animal's meat or milk must not be used, from the product label. Until that day has passed, the animal shows a red "Withdrawal until" badge in the dashboard and cattle tables, in its details, and under **Withdrawal Periods** on the Medical Records page. With several treatments, the latest withdrawal date counts.
+- **Edit or delete** a treatment with the buttons on its row. Search the history by animal, product, given by or notes, and filter it by type.
+
+On the dashboard, **Scheduled Treatments** counts open follow-ups due within the next 7 days, overdue ones included (the line under the number says how many are overdue). Each overdue follow-up is also listed under **Alerts**; View opens the animal's Treatments tab.
+
+Deleting an animal deletes its treatments. The animal's Current Medications field is separate free text and is not changed by treatments. Demo accounts start with sample treatments, including an overdue vaccination, follow-ups due this week, and two animals in a withdrawal period.
 
 ## Settings and password
 
