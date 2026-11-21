@@ -12,8 +12,13 @@ const roleRule = () => body('role')
   .custom((v) => v === 'admin' || v === 'user')
   .withMessage('Role must be admin or user');
 
+// cattle_count lets the screen say how many animals a deletion would remove.
 router.get('/', async (req, res) => {
-  const { rows } = await pool.query('SELECT id, email, role, created_at FROM users WHERE NOT is_demo ORDER BY id');
+  const { rows } = await pool.query(`
+    SELECT u.id, u.email, u.role, u.created_at,
+           (SELECT count(*) FROM cattle c WHERE c.owner_id = u.id)::int AS cattle_count
+    FROM users u WHERE NOT u.is_demo ORDER BY u.id
+  `);
   res.json(rows);
 });
 

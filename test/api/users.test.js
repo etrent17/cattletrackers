@@ -46,19 +46,22 @@ describe('/api/users is admin-only', () => {
 });
 
 describe('user management as admin', () => {
-  test('lists users without password hashes', async () => {
+  test('lists users with their cattle count, without password hashes or demo users', async () => {
     const admin = await signedIn('admin@example.com', { role: 'admin' });
-    await signedIn('user@example.com');
+    const user = await signedIn('user@example.com');
+    await user.post('/api/cattle').send({ tagNumber: 'CT-1' }).expect(201);
+    await user.post('/api/cattle').send({ tagNumber: 'CT-2' }).expect(201);
+    await pool.query("INSERT INTO users (email, password_hash, is_demo) VALUES ('demo-1@demo.invalid', 'x', true)");
     const res = await admin.get('/api/users').expect(200);
     assert.deepEqual(
-      res.body.map(({ id, email, role }) => ({ id, email, role })),
+      res.body.map(({ id, email, role, cattle_count }) => ({ id, email, role, cattle_count })),
       [
-        { id: admin.user.id, email: 'admin@example.com', role: 'admin' },
-        { id: admin.user.id + 1, email: 'user@example.com', role: 'user' },
+        { id: admin.user.id, email: 'admin@example.com', role: 'admin', cattle_count: 0 },
+        { id: user.user.id, email: 'user@example.com', role: 'user', cattle_count: 2 },
       ]
     );
     for (const row of res.body) {
-      assert.deepEqual(Object.keys(row).sort(), ['created_at', 'email', 'id', 'role']);
+      assert.deepEqual(Object.keys(row).sort(), ['cattle_count', 'created_at', 'email', 'id', 'role']);
     }
   });
 
