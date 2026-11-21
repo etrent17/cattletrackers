@@ -1,0 +1,107 @@
+name: Docker image
+
+# Builds the app image, starts it against PostgreSQL and checks /api/health,
+# then publishes it to GitHub Packages: ghcr.io/<owner>/cattletrackers
+#   :latest  from main
+#   :dev     from the integration branch (all finished features, before they reach main)
+#   :sha-<commit> for every published build
+on:
+  push:
+    branches:
+      - main
+      - claude/adoring-hypatia-oxjcc2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cattle
+          POSTGRES_PASSWORD: cattle
+          POSTGRES_DB: cattle
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cattle -d cattle"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Image name (lower case)
+        id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build for the smoke test (amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: cattletrackers:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the image
+        run: |
+          docker run -d --name app --network host \
+            -e PORT=3000 \
+            -e DATABASE_URL=postgres://cattle:cattle@localhost:5432/cattle \
+            -e SESSION_SECRET=ci-only-secret \
+            -e DEMO_MODE=true \
+            cattletrackers:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/api/health; then echo; break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:3000/api/health
+          curl -fsS http://localhost:3000/api/auth/status | grep -q '"demoEnabled":true'
+          curl -fsS -o /dev/null http://localhost:3000/login.html
+          curl -fsS -X POST -c jar http://localhost:3000/api/auth/demo | grep -q '"user"'
+          test "$(curl -fsS -b jar http://localhost:3000/api/cattle | grep -o '"tagNumber"' | wc -l)" -ge 8
+          echo "Smoke test passed"
+
+      - name: App logs
+        if: always()
+        run: docker logs app || true
+
+      - name: Tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.name.outputs.image }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/claude/adoring-hypatia-oxjcc2' }}
+            type=sha,format=short
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish (amd64 and arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

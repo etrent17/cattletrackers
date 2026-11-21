@@ -236,6 +236,83 @@ Each treatment is returned as `{ id, cattleId, cattleTag, cattleName, dateGiven,
 
 **Withdrawal.** After every create, update and delete, the animal's `withdrawalUntil` is set to the latest `withdrawalUntil` of its treatments (empty when none has one), in the same transaction. The app treats an animal as in a withdrawal period while that date is today or later. Deleting an animal deletes its treatments.
 
-## Not available
+## Reports (`/api/reports`, sign-in required)
 
-There are no performance-report or health-report endpoints.
+Read-only summaries of the signed-in user's records. Each request is computed in SQL inside one read-only snapshot, so the parts of a report always agree.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/performance` | Herd size, calvings, calving rate and interval, daily gain, conception rate |
+| GET | `/health` | Treatments by type and month, and the animals needing attention today |
+
+Both take the same optional query parameters:
+
+- `from`, `to`: `YYYY-MM-DD`, inclusive. They select the events of the period. Leave one or both out for an open end. An invalid date, or `from` after `to`, returns 400.
+- `today`: the caller's local calendar date (`YYYY-MM-DD`). It decides what "now" is (withdrawal periods, overdue follow-ups, the last month of the herd series). It defaults to the server's UTC date; the app always sends it.
+
+Counts are integers. Rates and averages are JSON numbers rounded by the database (percentages, days and birth weights to one decimal, lbs per day to two); a rate or average with nothing to measure is `null`. The answer echoes `from`, `to` (`null` when not given) and `today`.
+
+### Performance
+
+```json
+{
+  "from": "2026-01-01", "to": "2026-06-30", "today": "2026-06-15",
+  "herd": { "size": 6, "females": 4, "males": 1,
+            "byMonth": [{ "month": "2026-06", "asOf": "2026-06-15", "added": 1, "size": 6 }] },
+  "calvings": { "count": 3, "cows": 2,
+                "byOutcome": { "alive": 2, "stillborn": 1, "unknown": 0 },
+                "byEase": { "unassisted": 2, "assisted": 0, "caesarean": 1, "unknown": 0 },
+                "birthWeights": 2, "averageBirthWeight": 77.5,
+                "breedingAgeMonths": 15, "breedingFemales": 4, "cowsCalved": 2, "calvingRate": 50 },
+  "calvingInterval": { "intervals": 2, "cows": 2, "averageDays": 345, "minDays": 315, "maxDays": 375 },
+  "dailyGain": { "animals": 3, "herdAverage": 1,
+                 "byGroup": [{ "group": "female", "animals": 1, "average": 1.5 }],
+                 "byAnimal": [{ "cattleId": "…", "cattleTag": "A-1", "cattleName": "Daisy", "group": "female",
+                                "firstDate": "2026-01-10", "firstWeight": 1000, "lastDate": "2026-04-20", "lastWeight": 1150,
+                                "weighings": 3, "days": 100, "gain": 150, "dailyGain": 1.5 }] },
+  "breeding": { "breedings": 4, "checked": 2, "pregnant": 1, "open": 1, "conceptionRate": 50 }
+}
+```
+
+Definitions:
+
+- **`herd.size`, `females`, `males`**: animals on record now. They do not depend on the period.
+- **`herd.byMonth`**: one row per calendar month, from the month of `from` (or of the first animal, when `from` is not given) to the month of `to` or of `today`, whichever is earlier. `asOf` is the last day counted: the month's last day, or the end of the period or `today` in the final month. `size` is the number of animals on record now whose record had been created by `asOf`; `added` is how many were created in that month up to `asOf`. The creation time is read as a UTC date, but never later than `today`. **Limitations:** deleted animals are not tracked, so they are missing from every month; an animal entered late counts from the day it was entered, not from when it arrived. At most the newest 120 months are returned. The series is empty when the period starts after `today`, or when there are no animals and no `from`.
+- **`calvings.count`**: calving records dated in the period (twins are two records). `cows` is how many different animals they belong to. `byOutcome` and `byEase` split `count`; `unknown` means the field was left empty. `averageBirthWeight` (lbs) averages the `birthWeights` records that have a weight.
+- **`calvings.calvingRate`** = `cowsCalved` ÷ `breedingFemales` × 100. `breedingFemales` are the animals on record now that are not male and either have a calving dated on or before the end of the period, or are female and were at least `breedingAgeMonths` (15) months old at the end of the period; a female with no birth date counts. `cowsCalved` are those of them with a calving in the period, each counted once however long the period is. The end of the period is `to`, or `today` when `to` is later or not given. `null` when there are no breeding females.
+- **`calvingInterval`**: for each calving date in the period, the days since the same cow's previous calving date (in or before the period). Calves born on the same day are one calving, and a cow's first calving has no interval. `averageDays` is the mean of those `intervals`; `cows` is how many cows they belong to.
+- **`dailyGain.byAnimal`**: for each animal with weighings on at least two different dates in the period, the first and the last weighing in it (ties on a date go by entry order), `days` between them, `gain` = last − first (lbs) and `dailyGain` = gain ÷ days (lbs per day). Sorted by `dailyGain`, largest first. `group` is the animal's sex: `female`, `male` or `unknown`.
+- **`dailyGain.herdAverage`** and **`byGroup[].average`**: the mean of the animals' daily gains (before rounding), each animal counting once whatever its weight or the length of its interval.
+- **`breeding`**: `breedings` dated in the period. A breeding's result is the cow's newest `pregnant` or `open` check dated on or after the breeding and before her next breeding; `unsure` checks decide nothing, and the check's own `breedingId` link is not used. `checked` breedings have a result; `conceptionRate` = `pregnant` ÷ `checked` × 100, `null` when none is checked.
+
+Weaning and sale weights are not recorded as such, so the report has no figures for them.
+
+### Health
+
+```json
+{
+  "from": null, "to": null, "today": "2026-06-15",
+  "treatments": { "count": 6, "animals": 4,
+                  "byType": [{ "type": "treatment", "count": 3, "animals": 2 }],
+                  "byMonth": [{ "month": "2026-02", "treatment": 3, "vaccination": 0, "vet_visit": 1, "other": 0, "total": 4 }] },
+  "herd": { "size": 6, "healthy": 3, "pregnant": 1, "underTreatment": 1, "quarantine": 1 },
+  "underTreatment": [{ "cattleId": "…", "cattleTag": "A-2", "cattleName": "Bess", "medications": "Penicillin",
+                       "lastTreatmentDate": "2026-02-20", "lastTreatmentType": "treatment", "lastTreatmentProduct": "Penicillin" }],
+  "quarantine": [],
+  "withdrawal": [{ "cattleId": "…", "cattleTag": "A-2", "cattleName": "Bess", "withdrawalUntil": "2026-06-20",
+                   "daysLeft": 5, "product": "Penicillin", "dateGiven": "2026-02-20" }],
+  "followUps": { "upcomingDays": 30,
+                 "overdue": [{ "id": "…", "cattleId": "…", "cattleTag": "A-2", "cattleName": "Bess", "type": "treatment",
+                               "product": "Penicillin", "dateGiven": "2026-02-20", "nextDueDate": "2026-06-10", "daysUntil": -5 }],
+                 "upcoming": [] }
+}
+```
+
+Definitions:
+
+- **`treatments`** covers the period: `count` is the treatments dated in it and `animals` the different animals treated. `byType` always lists the four types in a fixed order, with zeros. `byMonth` lists only months that have treatments, oldest first.
+- Everything else describes the herd on `today` and does not depend on the period.
+- **`herd`**: animals on record by health status.
+- **`underTreatment`**, **`quarantine`**: the animals with that status, by cow number, each with the `medications` text of its record and its newest treatment (`lastTreatmentDate` is `null` when it has none).
+- **`withdrawal`**: animals whose `withdrawalUntil` is `today` or later (the last day counts), the one ending first at the top. `daysLeft` is 0 on the last day. `product` and `dateGiven` are those of the newest treatment that set the date.
+- **`followUps`**: open follow-ups, by the same rule as `GET /api/treatments/due` (one shared SQL condition). `overdue` holds every one with `nextDueDate` before `today`; `upcoming` those due from `today` to `upcomingDays` (30) days ahead. `daysUntil` is negative when overdue. Sorted by `nextDueDate`.

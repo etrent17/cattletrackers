@@ -11,7 +11,7 @@ Computed by `CattleService.getStatistics()` in the browser from the loaded cattl
 | Total Cattle | Number of records |
 | Healthy Animals | Records whose status is Healthy |
 | Calving This Month | Records whose **expected** calving date falls in the current month. Completed births are not counted |
-| Scheduled Treatments | Records whose status is Under Treatment. This is a status count, not a treatment schedule |
+| Scheduled Treatments | Open treatment follow-ups due within 7 days, including overdue ones. Drawn from `GET /api/treatments/due`, not from `getStatistics()` |
 
 ## Record views
 
@@ -21,9 +21,35 @@ Computed by `CattleService.getStatistics()` in the browser from the loaded cattl
 
 ## Report pages
 
-Performance Reports and Health Reports currently render the same three figures: herd size, healthy percentage, and active treatments. They are placeholders.
+The three report pages show different things. Each has a period filter (the same presets as the financial pages), and its figures are computed by the server in SQL; the browser only formats them. Performance and Health share one period, and each of their tables has an Export CSV button. The Print button prints the report without the navigation, filter and buttons.
 
-Financial Reports shows the figures described below.
+**Performance Reports** (`GET /api/reports/performance`):
+
+| Figure | Definition |
+|---|---|
+| Herd size now | Animals on record today |
+| Herd size over time | For each month of the period, the animals on record today whose record had been created by the month's end (the current month is counted up to today). Deleted animals are not tracked, and an animal entered late counts from the day it was entered |
+| Calvings | Calving records dated in the period, split by outcome and by ease |
+| Calving rate | Cows that calved in the period ÷ breeding-age females. A breeding-age female is an animal not marked male that has calved before, or a female aged 15 months or more at the end of the period (a female with no birth date counts) |
+| Calving interval | Days from a cow's previous calving to her calving in the period, averaged over all such intervals. Twins born on one day are one calving |
+| Daily gain | Per animal: weight change from its first to its last weighing in the period ÷ the days between them (two weighings on different days are needed). By group (females, males, sex not recorded) and for the herd: the average of the animals' daily gains |
+| Conception rate | Breedings found pregnant ÷ breedings with a result. A breeding's result is the cow's newest pregnant or open check dated on or after it and before her next breeding |
+
+Weaning and sale weights are not recorded, so the report does not show them; birth weights come from the calving records.
+
+**Health Reports** (`GET /api/reports/health`):
+
+| Figure | Definition |
+|---|---|
+| Treatments, animals treated | Medical records dated in the period, and the different animals they belong to |
+| By type, by month | The same records split by type (treatment, vaccination, vet visit, other) and by calendar month |
+| Under treatment, in quarantine | Animals whose status says so today, with their newest medical record |
+| In a withdrawal period | Animals whose latest withdrawal date is today or later |
+| Overdue and upcoming follow-ups | Open follow-ups (the Medical Records rule): every overdue one, and those due within 30 days |
+
+The last three describe the herd today and do not change with the period. The exact rules, including rounding, are in the [API reference](api.md).
+
+**Financial Reports** shows the figures described below.
 
 ## Financial data
 

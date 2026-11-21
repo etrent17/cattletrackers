@@ -43,7 +43,8 @@ See "Running the tests" in the [README](../README.md). The automated tests do no
 - [ ] Layout is usable on a phone-width screen
 
 ## Reports and settings
-- [ ] Confirm each report page is still a placeholder
+- [ ] Performance, Health and Financial Reports each show their own figures; changing the period updates them
+- [ ] Export CSV on a report table opens in a spreadsheet; Print shows the report without the menu and buttons
 - [ ] Settings text matches real behavior
 
 ## Permissions

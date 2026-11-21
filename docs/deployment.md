@@ -27,6 +27,26 @@ The Docker build runs `npm ci`, which needs `package-lock.json` to match `packag
 
 Edit `.env`, then run `docker compose up -d` (or `./install.sh`). Compose recreates the app container with the new values. For example, `DEMO_MODE=true` shows the "Try the live demo" button on the login page.
 
+## Pre-built image (GitHub Packages)
+
+GitHub Actions (`.github/workflows/docker-publish.yml`) builds the image, starts it against PostgreSQL and checks `/api/health` and the demo herd, then publishes it for `linux/amd64` and `linux/arm64`:
+
+| Tag | Built from |
+|---|---|
+| `ghcr.io/etrent17/cattletrackers:dev` | the integration branch: every finished feature, before it reaches `main` |
+| `ghcr.io/etrent17/cattletrackers:latest` | `main` |
+| `ghcr.io/etrent17/cattletrackers:sha-<commit>` | that exact commit |
+
+To run it on a dev or test Docker host without the source, copy [`deploy/docker-compose.dev.yml`](../deploy/docker-compose.dev.yml) there (or paste it into a Portainer-style stack) and start it:
+
+```
+SESSION_SECRET=$(openssl rand -hex 32) DB_PASSWORD=$(openssl rand -hex 24) docker compose -f docker-compose.dev.yml up -d
+```
+
+Keep the same `DB_PASSWORD` on later runs (put both values in a `.env` file next to the compose file): PostgreSQL fixes the password into its volume on first start. The app listens on port 3036 (`APP_PORT`), demo mode is on by default (`DEMO_MODE`), and `IMAGE_TAG=latest` switches to the `main` build. To update: `docker compose -f docker-compose.dev.yml pull && docker compose -f docker-compose.dev.yml up -d`.
+
+**Access.** New GitHub packages start private. Either the repository owner makes the package public (GitHub → the repository's Packages → `cattletrackers` → Package settings → Change visibility), or each person pulling signs in once with a personal access token that has the `read:packages` scope: `docker login ghcr.io -u <github-username>`. Repository collaborators can pull because the package inherits the repository's access.
+
 ## Manual
 
 1. Install Node 22 and PostgreSQL 16.

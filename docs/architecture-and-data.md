@@ -13,7 +13,7 @@ public/              index.html, login.html, CSS, service-worker.js
 src/                 browser ES modules
   app.js             startup (also from the saved copy when offline), sign-out, service worker registration
   auth.js            login page logic
-  controllers/       CattleController, CalvingController, UsersController, FinanceController (financial pages), SyncController (offline banner, replay, unsynced changes)
+  controllers/       CattleController, CalvingController, UsersController, FinanceController (financial pages), ReportsController (performance and health reports), SyncController (offline banner, replay, unsynced changes)
   services/          CattleService (API calls and statistics), AccountService (password change), CalvingService, FinanceService, OfflineStore (IndexedDB), SyncEngine (outbox and replay)
   views/             DashboardView, ListView, FormView, SettingsView, UsersView, CalvingView, FinanceView, SyncView
   models/ utils/     Cattle model, validators, date helpers, escapeHtml, feedback, money (cents), csv, connectivity (online/offline state)

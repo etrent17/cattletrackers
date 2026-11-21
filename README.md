@@ -14,6 +14,7 @@ Cattle Trackers is a livestock management web application: an Express server, a 
 - Weight tracking: weighing history, batch entry, a weight chart and average daily gain per animal
 - A dashboard with herd statistics, upcoming calvings, treatments due, and alerts
 - Financial records (income and expenses, optionally per animal) with CSV export, and a Financial Reports page
+- Performance Reports (herd size over time, calving rate and interval, average daily gain, conception rate) and Health Reports (treatments by type and month, animals under treatment, in quarantine or in withdrawal, overdue and upcoming follow-ups), each with a period filter, CSV export and a print layout
 - User management for admins (add, remove, change roles), and a settings page with password change
 - Offline use for cattle records: the herd stays visible without a connection, cattle can be added, edited and deleted, and the changes sync when the connection returns (see the user guide, "Working offline")
 - A Docker-based installer
@@ -21,7 +22,6 @@ Cattle Trackers is a livestock management web application: an Express server, a 
 
 ## What does not exist yet
 
-- Distinct performance or health reports (those screens are placeholders)
 - Offline use of anything but cattle records: calvings, weights, treatments, breedings, financial records and reports need a connection
 
 ## Quick start

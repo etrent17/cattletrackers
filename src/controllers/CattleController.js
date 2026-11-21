@@ -1,6 +1,7 @@
 import { CattleService } from "../services/CattleService.js";
 import { UsersController } from "./UsersController.js";
 import { FinanceController } from "./FinanceController.js";
+import { ReportsController } from "./ReportsController.js";
 import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
@@ -55,6 +56,7 @@ export class CattleController {
     // Tabs after "Details" in the cow details modal: { id, label, appliesTo?(cow), render(cow, pane) }
     this.detailTabs = Object.values(this.recordPages).map((page) => page.detailTab());
     this.financeController = new FinanceController({ cattleService: this.cattleService, getCurrentView: () => this.currentView });
+    this.reportsController = new ReportsController({ getCurrentView: () => this.currentView });
   }
 
   // Listeners go on first so the page stays usable when the load fails.
@@ -216,34 +218,16 @@ export class CattleController {
     const titleEl = document.getElementById("secondary-view-title");
     const bodyEl = document.getElementById("secondary-view-body");
     if (this.financeController.handles(viewName)) return this.financeController.render(viewName, titleEl, bodyEl);
-    const stats = this.cattleService.getStatistics();
+    if (this.reportsController.handles(viewName)) return this.reportsController.render(viewName, titleEl, bodyEl);
 
-    const titles = {
-      reports: "Performance Reports",
-      "health-reports": "Health Reports",
-      "financial-reports": "Financial Reports",
-      settings: "System Settings",
-      users: "User Management",
-    };
-
-    titleEl.textContent = titles[viewName] || "Overview";
     if (viewName === "users") {
+      titleEl.textContent = "User Management";
       this.usersController ??= new UsersController({ onAccessLost: () => this.switchView("dashboard") });
       this.usersController.show(bodyEl).catch((err) => console.error("User Management failed:", err));
       return;
     }
-
-    if (viewName === "settings") {
-      this.settingsView.render(bodyEl, window.currentUser);
-    } else {
-      bodyEl.innerHTML = `
-        <div class="row g-3">
-          <div class="col-md-4"><div class="p-3 bg-light rounded"><strong>Total Herd Size:</strong> ${stats.total} head</div></div>
-          <div class="col-md-4"><div class="p-3 bg-light rounded"><strong>Healthy Rate:</strong> ${stats.total ? Math.round((stats.healthy / stats.total) * 100) : 0}%</div></div>
-          <div class="col-md-4"><div class="p-3 bg-light rounded"><strong>Active Treatments:</strong> ${stats.scheduledTreatments}</div></div>
-        </div>
-      `;
-    }
+    titleEl.textContent = "System Settings";
+    this.settingsView.render(bodyEl, window.currentUser);
   }
 
   async handleFormSubmit() {

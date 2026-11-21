@@ -21,9 +21,10 @@ Status key: **Not started** · **In progress** · **In review** (pull request op
 | 09 | [Breeding records](progress/09-breeding-records.md) | `feature/breeding-records` | 07 (pattern) | In review |
 | 10 | [Weight tracking](progress/10-weight-tracking.md) | `feature/weight-tracking` | 07 (pattern) | In review |
 | 11 | [Financial records](progress/11-financial-records.md) | `feature/financial-records` | 01, 02 | In review |
-| 12 | [Performance and health reports](progress/12-reports.md) | `feature/reports` | 07, 08, 09, 10 | Not started |
+| 12 | [Performance and health reports](progress/12-reports.md) | `feature/reports` | 07, 08, 09, 10 | In review |
 | **Phase 3: Deployment** | | | | |
 | 13 | [Deployment hardening](progress/13-deploy-hardening.md) | `feature/deploy-hardening` | none | Done |
+| 17 | [Docker image package](progress/17-docker-package.md) | `feature/docker-package` | 13 | In review |
 | **Phase 4: Later** | | | | |
 | 14 | [Offline editing](progress/14-offline-editing.md) | `feature/offline-editing` | 02, 04 | Not started |
 | **Phase 5: Design (after everything is functional)** | | | | |
