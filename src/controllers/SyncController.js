@@ -16,6 +16,9 @@ import { isOnline, onConnectivityChange, probe } from "../utils/connectivity.js"
 import { showToast } from "../utils/feedback.js";
 
 const RETRY_MS = 30_000;
+// After a failed attempt, sooner tries first: a connection that has just come back often needs a
+// few seconds before the server answers.
+const QUICK_RETRIES_MS = [3_000, 8_000, 15_000];
 
 const count = (n) => `${n} ${n === 1 ? "change" : "changes"}`;
 
@@ -29,6 +32,8 @@ export class SyncController {
     this.syncing = null;
     this.wasOnline = isOnline();
     this.items = [];
+    this.quickRetries = 0;
+    this.quickTimer = null;
   }
 
   init() {
@@ -50,6 +55,7 @@ export class SyncController {
     onConnectivityChange((online) => {
       const cameBack = online && !this.wasOnline;
       this.wasOnline = online;
+      if (navigator.onLine === false) this.quickRetries = 0; // a fresh set of quick tries after the next reconnect
       this.render();
       this.host.connectivityChanged(online);
       if (cameBack) this.syncNow({ reload: true });
@@ -85,7 +91,8 @@ export class SyncController {
   async retry() {
     if (document.hidden || navigator.onLine === false) return;
     if (!isOnline()) {
-      await probe(); // coming back online triggers the replay
+      // Coming back online triggers the replay (see init).
+      if (!(await probe())) this.quickRetry(true);
       return;
     }
     const state = await this.sync.state().catch(() => null);
@@ -122,6 +129,8 @@ export class SyncController {
       this.host.redraw();
     }
 
+    this.quickRetry(summary.remaining > 0 && (summary.stopped === "unreachable" || summary.stopped === "error"));
+
     if (summary.rejected) {
       showToast(`${count(summary.rejected)} could not be synced. Choose Review to see ${summary.rejected === 1 ? "it" : "them"}.`, "error");
     } else if (summary.synced) {
@@ -131,6 +140,19 @@ export class SyncController {
       else if (summary.stopped === "error") showToast("The server ran into a problem. Your changes are safe on this device; try again in a moment.", "error");
       else showToast("Everything is up to date.");
     }
+  }
+
+  // `failed`: changes are still waiting after an attempt that got no answer. Try again shortly, a
+  // few times, then leave it to the regular RETRY_MS check. Anything else resets the count.
+  quickRetry(failed) {
+    clearTimeout(this.quickTimer);
+    if (!failed) {
+      this.quickRetries = 0;
+      return;
+    }
+    if (this.quickRetries >= QUICK_RETRIES_MS.length || navigator.onLine === false) return;
+    this.quickTimer = setTimeout(() => this.retry(), QUICK_RETRIES_MS[this.quickRetries]);
+    this.quickRetries += 1;
   }
 
   openUnsynced() {

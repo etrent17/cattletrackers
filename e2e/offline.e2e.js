@@ -66,6 +66,27 @@ describe('offline editing', () => {
   const tags = async (p = page) => (await p.locator('#list-body .badge-cow').allInnerTexts()).sort();
   const bannerText = async (p = page) => (await p.locator('#sync-banner').innerText()).replace(/\s+/g, ' ').trim();
 
+  // Makes the page believe it is `date` (null: the real time again). Only `new Date()` and
+  // Date.now() change; timers keep running normally, unlike with Playwright's page.clock.
+  const setToday = (date, p = page) => p.evaluate((ms) => {
+    window.__RealDate ??= Date;
+    const Real = window.__RealDate;
+    if (ms === null) {
+      window.Date = Real;
+      return;
+    }
+    window.Date = class extends Real {
+      constructor(...args) {
+        if (args.length) super(...args);
+        else super(ms);
+      }
+
+      static now() {
+        return ms;
+      }
+    };
+  }, date ? date.getTime() : null);
+
   async function fillAndSave(fields, p = page) {
     const modal = p.locator('#cattleModal');
     await modal.waitFor({ state: 'visible' });
@@ -157,7 +178,7 @@ describe('offline editing', () => {
   });
 
   test('offline, a new cow can be added and an existing one edited', async () => {
-    await page.clock.setFixedTime(MADE_AT); // the changes are made three days before they sync
+    await setToday(MADE_AT); // the changes are made three days before they sync
 
     await addCow({ 'f-tag': 'CT-3', 'f-name': 'Clover', 'f-weight': '450' });
     await toast('New cow added to herd. Saved on this device.');
@@ -199,7 +220,7 @@ describe('offline editing', () => {
   }
 
   test('reconnecting syncs both changes, dated the day they were made', async () => {
-    await page.clock.setFixedTime(new Date());
+    await setToday(null);
     await goOnline();
     await toast('2 changes synced.');
     await page.locator('#sync-banner').waitFor({ state: 'hidden' });
@@ -337,8 +358,9 @@ describe('offline editing', () => {
     await showView('cattle');
     await row('CT-3').locator('.btn-delete').click();
     await toast('Cattle record deleted. Saved on this device.');
+    await row('CT-3').waitFor({ state: 'detached' });
     await row('CT-1').locator('.btn-delete').click();
-    await toast('Cattle record deleted. Saved on this device.');
+    await row('CT-1').waitFor({ state: 'detached' }); // (the toast still shows the same words)
     assert.deepEqual(await tags(), ['CT-2', 'CT-50']);
     assert.match(await bannerText(), /2 changes waiting to sync\./);
 
