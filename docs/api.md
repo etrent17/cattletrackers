@@ -35,9 +35,9 @@ A wrong current password answers 400, not 401, because the browser treats 401 as
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/` | Your cattle, newest first |
-| POST | `/` | Creates a record; 201. Demo users are limited to 25 |
-| PUT | `/:id` | Updates a record; 404 if not yours |
-| DELETE | `/:id` | Deletes a record; 404 if not yours |
+| POST | `/` | Creates a record; 201. Demo users are limited to 25. Optional `id`: see "Offline changes" |
+| PUT | `/:id` | Updates a record; 404 if not yours. Optional `expectedUpdatedAt`: see "Offline changes" |
+| DELETE | `/:id` | Deletes a record; 404 if not yours. Optional `expectedUpdatedAt`: see "Offline changes" |
 
 `lastCalvingDate` follows the animal's calving events (see Calvings). On `POST` a date given for a female or unspecified animal is saved as her first calving event; it is ignored for a male. On `PUT` the field is ignored: record, edit or delete a calving to change it.
 
@@ -48,6 +48,33 @@ Fields: `tagNumber` (required, 1 to 25 characters), `nameBreed` (max 100), `gend
 Each animal is also returned with `withdrawalUntil`: the latest withdrawal date of its treatments, or `""` (see Treatments). It is read-only; `POST` and `PUT` ignore it.
 
 A duplicate cow number returns 409 `Duplicate cow number`. `:id` must be a UUID.
+
+### Offline changes
+
+Three optional additions let the browser replay changes it queued while it had no connection. A request without them behaves exactly as described above.
+
+**`id` on `POST`** (a UUID chosen by the client; `null` or left out means the server chooses). The new animal gets that id, so a request can be repeated safely:
+
+| Situation | Answer |
+|---|---|
+| The id is free | 201 with the new animal |
+| You already have an animal with that id (an earlier attempt got through but its answer was lost) | 200 with that animal as it is now; nothing is written, whatever the body says |
+| The id belongs to another user, or lost a race with another request | 409 `This record could not be saved with that id. Add it again.` Nothing about the other record is returned |
+| Not a UUID | 400 `Invalid id` |
+
+**`expectedUpdatedAt` on `PUT`** (in the body) **and `DELETE`** (in the query string, `?expectedUpdatedAt=...`, or in a JSON body). It is the animal's `updatedAt` exactly as the client last received it. If the stored `updatedAt` differs, the animal has changed since (edited, or one of its calvings, weighings, treatments, breedings or pregnancy checks changed its summary fields), and the request is refused; the server's version stands:
+
+```json
+{
+  "error": "This record was changed after you last loaded it. Your change was not saved.",
+  "code": "stale",
+  "current": { "id": "...", "tagNumber": "CT-001", "updatedAt": "..." }
+}
+```
+
+The status is 409 and `current` is the whole animal as it is now. A refused `PUT` writes nothing, including no weighing. An empty value is treated as not given; anything that is not an ISO 8601 date-time returns 400 `Invalid expectedUpdatedAt`. An animal that no longer exists, or is not yours, is 404 `Cattle not found` as usual (never 409, and never with `current`). A duplicate cow number is still 409 `Duplicate cow number`, without `code` or `current`. Timestamps are compared to the millisecond, which is what the JSON carries.
+
+**`weightDate`** (already described above) is how a replayed change keeps its date: the browser sends the user's local date on the day the change was made, so the weighing is dated then, not on the day it synced.
 
 ## Transactions (`/api/transactions`, sign-in required)
 

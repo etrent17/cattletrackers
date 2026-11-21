@@ -15,7 +15,15 @@ describe('banner text', () => {
 
   test('the offline notice says when the herd was saved, when that is known', () => {
     assert.match(offlineText('2026-11-21T10:03:00.000Z'), /^You're offline\. Showing the herd saved on this device \(last updated .*2026.*\)\. /);
-    assert.match(offlineText(null), /^You're offline\. Showing the herd saved on this device\. You can still view, add, edit and delete cattle/);
+    assert.match(offlineText('2026-11-21T10:03:00.000Z'), /You can still view, add, edit and delete cattle; changes sync when the connection returns/);
+  });
+
+  test('the offline notice does not promise what the browser cannot do', () => {
+    assert.equal(offlineText(null), "You're offline, and your herd has not been saved on this device yet. Reconnect to load it.");
+    const readOnly = offlineText('2026-11-21T10:03:00.000Z', false);
+    assert.match(readOnly, /Showing the herd saved on this device/);
+    assert.match(readOnly, /can't keep changes while offline/);
+    assert.doesNotMatch(readOnly, /You can still/);
   });
 
   test('formatWhen is empty for a missing or unreadable date', () => {

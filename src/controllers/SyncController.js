@@ -81,6 +81,7 @@ export class SyncController {
     this.view.renderBanner({
       online: isOnline(),
       herdSavedAt: state.herdSavedAt,
+      canQueue: this.sync.persistent,
       pending: state.outbox.length,
       unsynced: state.unsynced.length,
       syncing: Boolean(this.syncing),

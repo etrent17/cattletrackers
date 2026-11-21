@@ -15,13 +15,14 @@ Cattle Trackers is a livestock management web application: an Express server, a 
 - A dashboard with herd statistics, upcoming calvings, treatments due, and alerts
 - Financial records (income and expenses, optionally per animal) with CSV export, and a Financial Reports page
 - User management for admins (add, remove, change roles), and a settings page with password change
+- Offline use for cattle records: the herd stays visible without a connection, cattle can be added, edited and deleted, and the changes sync when the connection returns (see the user guide, "Working offline")
 - A Docker-based installer
 - Automated tests (unit, API, and a browser smoke test) that also run on GitHub for every push and pull request
 
 ## What does not exist yet
 
 - Distinct performance or health reports (those screens are placeholders)
-- Offline editing of cattle data
+- Offline use of anything but cattle records: calvings, weights, treatments, breedings, financial records and reports need a connection
 
 ## Quick start
 
@@ -51,7 +52,7 @@ npm test
 | `npm run test:api` | API tests only (`test/api/`) | PostgreSQL |
 | `npm run test:e2e` | Browser tests (`e2e/`, one file at a time): the smoke test (set up, sign in, add a cow, see it on the dashboard and list, delete it) and one file per feature, such as `calving.e2e.js`, `finance.e2e.js`, `settings.e2e.js` and `users.e2e.js` | PostgreSQL, Chromium |
 
-Before the first `npm run test:e2e`, install the browser once with `npx playwright install chromium` (add `--with-deps` on a fresh Linux machine).
+Before the first `npm run test:e2e`, install the browser once with `npx playwright install chromium` (add `--with-deps` on a fresh Linux machine). The offline test (`e2e/offline.e2e.js`) also needs the `openssl` command: it runs the real service worker against a local HTTPS server that stands in for the CDNs (`e2e/helpers/cdn.js`).
 
 How it fits together:
 

@@ -16,10 +16,15 @@ export function formatWhen(iso) {
   return date.toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-export function offlineText(herdSavedAt) {
+// The offline notice. It only promises what this browser can do: `herdSavedAt` is null when no
+// herd has been saved here yet, and `canQueue` is false when the browser cannot keep changes
+// (no IndexedDB).
+export function offlineText(herdSavedAt, canQueue = true) {
+  if (!herdSavedAt) return "You're offline, and your herd has not been saved on this device yet. Reconnect to load it.";
   const when = formatWhen(herdSavedAt);
-  return `You're offline. Showing the herd saved on this device${when ? ` (last updated ${when})` : ""}. `
-    + "You can still view, add, edit and delete cattle; changes sync when the connection returns. Other pages need a connection.";
+  const showing = `You're offline. Showing the herd saved on this device${when ? ` (last updated ${when})` : ""}. `;
+  if (!canQueue) return `${showing}This browser can't keep changes while offline, so records can't be changed until the connection returns.`;
+  return `${showing}You can still view, add, edit and delete cattle; changes sync when the connection returns. Other pages need a connection.`;
 }
 
 const TYPE_TITLES = { create: "New animal", edit: "Edit of", delete: "Delete of" };
@@ -102,8 +107,8 @@ export class SyncView {
     text.textContent = online ? "Online" : "Offline";
   }
 
-  // { online, herdSavedAt, pending, unsynced, canSync }
-  renderBanner({ online, herdSavedAt, pending, unsynced, syncing }) {
+  // `canQueue`: this browser can keep changes made offline. `syncing`: a replay is running.
+  renderBanner({ online, herdSavedAt, canQueue, pending, unsynced, syncing }) {
     const banner = document.getElementById("sync-banner");
     if (!banner) return;
     const set = (id, value) => {
@@ -112,7 +117,7 @@ export class SyncView {
       el.textContent = value;
       el.hidden = !value;
     };
-    set("sync-offline-text", online ? "" : offlineText(herdSavedAt));
+    set("sync-offline-text", online ? "" : offlineText(herdSavedAt, canQueue));
     set("sync-pending-text", pendingText(pending));
     set("sync-unsynced-text", unsyncedText(unsynced));
 

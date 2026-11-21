@@ -108,7 +108,35 @@ System Settings shows the email you are signed in with, your role (Administrator
 
 To change your password, enter your current password, then the new password (10 to 128 characters) twice, and choose Change password. You stay signed in on this device; any other browser or device signed in to your account is signed out and needs the new password. After 10 attempts within 15 minutes the form asks you to wait. Demo accounts cannot change their password.
 
-The app keeps its own pages and scripts in your browser after a visit, but cattle records are kept on the server. Signing in and viewing or changing records need a connection; without one the app says it can't reach the server and offers Retry.
+While you are offline the password form is disabled; changing a password needs a connection.
+
+## Working offline
+
+After you have opened the app once with a connection, this browser keeps a copy of the app and of your herd, so you can carry on without a connection, for example out in a barn.
+
+**What works offline.** The Dashboard, Cattle Records and a cow's Details: viewing the herd, and adding, editing and deleting cattle. Everything else needs a connection: Calving Records, Weights, Medical Records, Breeding History, Financial Records, the report pages, User Management, changing your password, and signing in or out. Those pages show "This page needs a connection" instead of their content, with a Try again button. A cow's details show only the Details tab while offline.
+
+**How you can tell.** The top bar says **Offline** (it follows whether the server can actually be reached, not only whether the device has a network). A yellow bar under it says you are seeing the herd saved on this device and when it was last updated.
+
+**Making changes.** Add, edit and delete cattle as usual. Each change is saved on this device and shown at once; the animal is marked **Not synced** in the list, and the bar counts the changes waiting ("2 changes waiting to sync"). A cow number already used in the herd on this device is refused straight away, as it is online. A weight you enter is recorded with the date you entered it, even if it syncs days later.
+
+**Syncing.** When the connection returns, the waiting changes are sent automatically, oldest first; a message says how many synced. You can also choose **Sync now** in the bar. If the server still can't be reached, nothing is lost: the changes stay on the device and are tried again (every 30 seconds while the page is open, and whenever the app starts).
+
+**When a change can't be applied.** The server may not be able to accept a change: the same animal was changed on another device in the meantime, it was deleted there, or the cow number you chose is now taken. In that case **the server's version is kept** and shown in the herd, and your change is **not** thrown away: the bar turns red and says "1 change could not be synced". Choose **Review** to open the Unsynced changes list. Each entry shows what you changed (next to the server's value, for an edit), why it was not applied, and two buttons:
+
+- **Apply again** (Add again, Delete anyway): opens the normal form with your values on top of the current record, or asks for confirmation for a delete. Saving it makes a new change; the entry is removed once that is saved. Closing the form without saving keeps the entry.
+- **Discard**: removes the entry after a confirmation. This cannot be undone.
+
+Changes made after one that could not be applied, to the same animal, are listed with it rather than sent. Changes to other animals go through as normal.
+
+**Signing out** removes the copy of your herd from this device. If changes are still waiting or unsynced, you are warned first, because signing out deletes them. Signing out needs a connection. If a different account signs in on the same browser, the previous account's copy is removed, along with any changes it had not synced (a message says how many).
+
+**Things to know.**
+
+- Anyone who can open this browser can see the saved herd while you are signed in, also without a connection. Sign out on a shared device.
+- Starting the app with no connection needs a secure address (HTTPS, or `localhost`), because browsers only allow the offline app shell there. On a plain `http://` address the app still keeps working if the connection drops while the page is open, but it cannot be opened offline.
+- If the session ends while you are offline, you are asked to sign in when the connection returns; your waiting changes are kept and sync after you sign in with the same account.
+- A browser with site storage turned off (some private windows) cannot keep changes offline. There the app needs a connection, as before.
 
 ## Financial records
 
