@@ -14,11 +14,11 @@ src/                 browser ES modules
   app.js             startup and sign-out
   auth.js            login page logic
   controllers/       CattleController
-  services/          CattleService (API calls and statistics)
-  views/             DashboardView, ListView, FormView
+  services/          CattleService (API calls and statistics), AccountService (password change)
+  views/             DashboardView, ListView, FormView, SettingsView
   models/ utils/     Cattle model, validators, date helpers, escapeHtml
 test/                unit tests (unit/), API tests (api/), shared setup (helpers/)
-e2e/                 browser smoke test (Playwright)
+e2e/                 browser tests (Playwright); shared setup in e2e/helpers.js
 ```
 
 ## Request flow
@@ -49,4 +49,4 @@ Always escape record fields in templates. Views build HTML with template strings
 
 ## Service worker
 
-Caches static assets and serves them when the network fails. Requests to `/api/` are never intercepted, so cattle data is not available offline.
+Caches static assets and serves them when the network fails. Requests to `/api/` are never intercepted, so cattle data is not available offline. Nothing is stored in `localStorage`. The System Settings screen describes this to users.

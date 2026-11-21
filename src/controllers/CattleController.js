@@ -2,6 +2,7 @@ import { CattleService } from "../services/CattleService.js";
 import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
+import { SettingsView } from "../views/SettingsView.js";
 import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
 import { hideErrorBanner, showErrorBanner, showToast } from "../utils/feedback.js";
 import { escapeHtml } from "../utils/escapeHtml.js";
@@ -12,6 +13,7 @@ export class CattleController {
     this.dashboardView = new DashboardView();
     this.formView = new FormView();
     this.listView = new ListView();
+    this.settingsView = new SettingsView();
     this.editingId = null;
     this.saving = false;
     this.currentView = "dashboard";
@@ -136,15 +138,7 @@ export class CattleController {
     titleEl.textContent = titles[viewName] || "Overview";
 
     if (viewName === "settings") {
-      bodyEl.innerHTML = `
-        <p class="text-muted">Offline storage is active via browser <code>localStorage</code> and Service Worker caching.</p>
-        <button class="btn btn-outline-danger btn-sm" id="reset-demo-data-btn">Reset to Blueprint Sample Herd</button>
-      `;
-      document.getElementById("reset-demo-data-btn")?.addEventListener("click", async () => {
-        localStorage.removeItem("cattle-data");
-        if (!(await this.loadData())) return;
-        this.showNotification("Sample herd data restored", "success");
-      });
+      this.settingsView.render(bodyEl, window.currentUser);
     } else {
       bodyEl.innerHTML = `
         <div class="row g-3">

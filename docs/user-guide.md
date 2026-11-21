@@ -45,6 +45,14 @@ On Cattle Records, type in the search box to match cow number, name/breed, medic
 | Health Status | Healthy, Under Treatment, In Quarantine, or Pregnant |
 | Additional Notes | Up to 2000 characters |
 
+## Settings and password
+
+System Settings shows the email you are signed in with, your role (Administrator or User), and whether this is a demo account.
+
+To change your password, enter your current password, then the new password (10 to 128 characters) twice, and choose Change password. You stay signed in on this device; any other browser or device signed in to your account is signed out and needs the new password. After 10 attempts within 15 minutes the form asks you to wait. Demo accounts cannot change their password.
+
+The app keeps its own pages and scripts in your browser after a visit, but cattle records are kept on the server. Signing in and viewing or changing records need a connection; without one the app says it can't reach the server and offers Retry.
+
 ## Demo accounts
 
 A demo session lasts four hours, starts with eight sample animals, and is limited to 25 animals. Demo data is deleted automatically.
