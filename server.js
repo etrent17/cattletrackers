@@ -17,7 +17,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(
   helmet({
-    hsts: false, // re-enable once you serve over HTTPS
+    // Strict-Transport-Security: enable with HSTS=true only once the site is served over HTTPS
+    hsts: process.env.HSTS === 'true'
+      ? { maxAge: Number(process.env.HSTS_MAX_AGE) || 31536000, includeSubDomains: false }
+      : false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -32,6 +35,27 @@ app.use(
 );
 app.use(express.json());
 app.use(morgan('dev'));
+
+// Registered before the session middleware so it never touches the session store.
+// Returns 503 when PostgreSQL cannot answer within HEALTH_TIMEOUT_MS.
+const HEALTH_TIMEOUT_MS = 3000;
+app.get('/api/health', async (req, res) => {
+  let timer;
+  try {
+    await Promise.race([
+      pool.query('SELECT 1'),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('database health check timed out')), HEALTH_TIMEOUT_MS);
+      }),
+    ]);
+    res.json({ status: 'healthy', database: 'up' });
+  } catch (err) {
+    console.error('Health check failed:', err.message);
+    res.status(503).json({ status: 'unhealthy', database: 'down' });
+  } finally {
+    clearTimeout(timer);
+  }
+});
 
 app.use(
   session({
@@ -51,7 +75,6 @@ app.use(
 app.use(express.static('public'));
 app.use('/src', express.static('src'));
 
-app.get('/api/health', (req, res) => res.json({ status: 'healthy' }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/cattle', require('./routes/cattle'));
