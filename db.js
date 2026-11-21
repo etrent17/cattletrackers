@@ -7,7 +7,14 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // without a listener that would crash the process. The pool replaces the client on the next query.
 pool.on('error', (err) => console.error('PostgreSQL idle client error:', err.message));
 
+// Each feature keeps its tables in its own function below and is listed here once.
+// Every step must be safe to run on every start (IF NOT EXISTS, guarded data migrations).
 async function initSchema() {
+  await coreSchema();
+  await calvingSchema();
+}
+
+async function coreSchema() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -37,6 +44,41 @@ async function initSchema() {
       ON cattle (owner_id, lower(tag_number));
   `);
 }
+
+// --- Calving records (feature 07) -----------------------------------------------------------
+// cattle.last_calving_date is kept equal to the newest event's date (NULL when there are none);
+// routes/calvings.js updates it in the same transaction as every event change.
+async function calvingSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS calving_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      cattle_id UUID NOT NULL REFERENCES cattle(id) ON DELETE CASCADE,
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      calving_date DATE NOT NULL,
+      calf_sex TEXT CHECK (calf_sex IN ('female','male')),
+      calf_tag TEXT,
+      birth_weight NUMERIC(6,2),
+      ease TEXT CHECK (ease IN ('unassisted','assisted','caesarean')),
+      outcome TEXT CHECK (outcome IN ('alive','stillborn')),
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS calving_events_cattle_idx ON calving_events (cattle_id, calving_date DESC);
+    CREATE INDEX IF NOT EXISTS calving_events_owner_idx ON calving_events (owner_id, calving_date DESC);
+  `);
+  // One-time migration: an animal that has a last calving date but no events gets one event for
+  // that date. It cannot repeat: once an animal has events the guard is false, and when its last
+  // event is deleted the route clears last_calving_date too.
+  await pool.query(`
+    INSERT INTO calving_events (cattle_id, owner_id, calving_date, notes)
+    SELECT c.id, c.owner_id, c.last_calving_date, 'Imported from the last calving date on the animal record.'
+    FROM cattle c
+    WHERE c.last_calving_date IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM calving_events e WHERE e.cattle_id = c.id)
+  `);
+}
+// --- end calving records --------------------------------------------------------------------
+
 async function cleanupDemoUsers(hours = 4) {
   const result = await pool.query(
     'DELETE FROM users WHERE is_demo AND created_at < now() - make_interval(hours => $1)',

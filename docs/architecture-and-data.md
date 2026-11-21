@@ -6,19 +6,19 @@
 server.js            entry point: checks settings, prepares the database, listens
 app.js               Express app (no listening): security headers, sessions, routing
 db.js                PostgreSQL pool, schema creation, demo cleanup
-routes/              auth.js, cattle.js, users.js
+routes/              auth.js, cattle.js, calvings.js, users.js
 middleware/auth.js   requireAuth, requireAdmin, validate
-lib/                 password.js, demo.js
+lib/                 password.js, demo.js, records.js (helpers for event-record routes)
 public/              index.html, login.html, CSS, service-worker.js
 src/                 browser ES modules
   app.js             startup and sign-out
   auth.js            login page logic
-  controllers/       CattleController
-  services/          CattleService (API calls and statistics), AccountService (password change)
-  views/             DashboardView, ListView, FormView, SettingsView
-  models/ utils/     Cattle model, validators, date helpers, escapeHtml
+  controllers/       CattleController, CalvingController, UsersController
+  services/          CattleService (API calls and statistics), AccountService (password change), CalvingService
+  views/             DashboardView, ListView, FormView, SettingsView, UsersView, CalvingView
+  models/ utils/     Cattle model, validators, date helpers, escapeHtml, feedback
 test/                unit tests (unit/), API tests (api/), shared setup (helpers/)
-e2e/                 browser tests (Playwright); shared setup in e2e/helpers.js
+e2e/                 browser tests (Playwright): smoke test, one file per feature; shared setup in helpers.js and helpers/
 ```
 
 ## Request flow
@@ -35,9 +35,52 @@ Created automatically at startup (`initSchema`).
 
 **cattle**: `id` (UUID), `owner_id` (users, cascade delete), `tag_number`, `name_breed`, `gender`, `birth_date`, `weight`, `last_calving_date`, `expected_calving_date`, `medications`, `health_status`, `notes`, `created_at`, `updated_at`. A unique index on owner and lower-cased tag number prevents duplicates.
 
+**calving_events**: `id` (UUID), `cattle_id` (cattle, cascade delete), `owner_id` (users, cascade delete), `calving_date`, `calf_sex`, `calf_tag`, `birth_weight`, `ease` (unassisted, assisted, caesarean), `outcome` (alive, stillborn), `notes`, `created_at`. Only the date is required. Indexed by animal and by owner, each with the date.
+
+`cattle.last_calving_date` is kept, not derived: it always equals the animal's newest calving event, or NULL when she has none. `routes/calvings.js` updates it in the same transaction as every event insert, update and delete. Keeping the column means the cattle list, dashboard and model read it as before without a join. To hold the rule, `POST /api/cattle` turns a typed last calving date into the first event, `PUT /api/cattle/:id` ignores the field, and the cattle form makes it read-only when editing. At startup, any animal that has a date but no events gets one event for it; this is how data from before calving events existed is carried over, and it cannot repeat because deleting an animal's last event also clears her date.
+
 **session**: managed by `connect-pg-simple`.
 
 Date columns are returned as `YYYY-MM-DD` strings. The API uses camelCase names (`tagNumber`) while the database uses snake_case.
+
+## Event records pattern
+
+Calving records are the model for every dated record that belongs to an animal (treatments, breedings, weights). Copy the calving files and keep these conventions. Below, `records` stands for the plural name (`calvings`) and `Record` for the singular (`Calving`).
+
+**Table** (`db.js`)
+
+- One function per feature (`calvingSchema()`), in its own delimited block, called from `initSchema()`. Adding a feature adds one function and one line.
+- Columns: `id UUID` primary key, `cattle_id UUID NOT NULL REFERENCES cattle(id) ON DELETE CASCADE`, `owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE`, the event date as `DATE NOT NULL`, the feature's fields, `created_at`. Use `CHECK` for fixed lists. Optional fields are nullable; do not default a value nobody entered.
+- Indexes on `(cattle_id, <date> DESC)` and `(owner_id, <date> DESC)`.
+- Everything must be safe to run on every start: `CREATE ... IF NOT EXISTS`, and a data migration only behind a guard that is false once it has run.
+- `test/helpers/api.js` empties tables with `TRUNCATE ... CASCADE` from `cattle` and `users`, so a table that references them needs no change there.
+
+**API** (`routes/<records>.js`, mounted in `app.js`)
+
+- The file exports two routers: `forCattle`, mounted at `/api/cattle/:cattleId/<records>` (GET one animal's history, POST a new event), and `router`, mounted at `/api/<records>` (GET the whole herd, `PUT /:id`, `DELETE /:id`). Mount `forCattle` before `/api/cattle`.
+- Ownership on every route. Nested routes call `ownedCattle(db, cattleId, userId)` from `lib/records.js` and answer 404 `Cattle not found` when it returns nothing. Routes by event id filter on `id = $1 AND owner_id = $2` and answer 404 `<Record> not found`. `owner_id` and `cattle_id` are set from the session and the URL, never from the body. Another user's record is always a 404, never a 403.
+- Validation with express-validator and `validate`, a message on every rule, `isoDate` for dates. `PUT` replaces all fields, like `PUT /api/cattle/:id`.
+- Responses are camelCase through a `toApi` function. Events include `cattleId`, `cattleTag` and `cattleName` (joined from `cattle`), so a herd-wide list needs no second request. Lists are newest first.
+- Anything that touches more than one row runs in `withTransaction()`. Take the animal's row lock first (`ownedCattle(..., { lock: true })`), and throw `httpError(status, message)` to roll back and answer. If the feature keeps a summary on `cattle` (as calvings keep `last_calving_date`), update it in that same transaction after every insert, update and delete.
+- To create an animal from another route, call `createCattle()` from `routes/cattle.js` so the demo limit and duplicate-number rule apply.
+- Add sample events to `lib/demo.js` so the page is not empty in demo mode.
+
+**Front end**
+
+- `src/services/<Record>Service.js`: the API calls (using `api` from `CattleService.js`, which gives errors a `status`) and pure, exported helpers for payloads, validation and filtering. No DOM.
+- `src/views/<Record>View.js`: all HTML. Every record value goes through `escapeHtml()`.
+- `src/controllers/<Record>Controller.js`: listeners and flow. It receives a `host` object from `CattleController` (`cattleService`, `reloadHerd()`, `openCowDetails(id, tabId)`) and has `init()`, `show()` (the page became visible: draw, fetch, draw), `hide()`, `render()` (redraw from memory) and `detailTab()`.
+- In `CattleController`, a feature adds its controller to `recordPages` under its view name. That one entry routes the sidebar link to the section `#view-<name>`, and adds the feature's tab to the cow details modal. The tab is `{ id, label, appliesTo?(cow), render(cow, pane) }`; it is drawn the first time it is shown and fetches that animal's history each time.
+- `public/index.html` gets the page section `#view-<name>` and the form modal. Give buttons feature-specific classes (`btn-calving-edit`), because `.btn-edit`, `.btn-view` and `.btn-delete` already mean the cattle actions; a `.btn-view` with a cattle id in `data-id` opens that cow's details from anywhere.
+- Bootstrap shows one modal at a time. A form opened from the details modal closes it first and reopens it on the feature's tab when the form closes (see `CalvingController.openForm`).
+- After any change, call `host.reloadHerd()` when the herd may have changed, then refetch the page.
+- Add each new browser file to `urlsToCache` in `public/service-worker.js`.
+
+**Tests**
+
+- `test/api/<records>.test.js`: authentication on every route, create and read, validation (each rule, on create and update), update and delete, owner isolation on every route (another user and an admin, checking the owner's data is unchanged afterwards), cascade when the animal or user is deleted, and any summary kept on `cattle`.
+- `test/unit/<record>-service.test.mjs`: the pure helpers and the request each API call sends.
+- `e2e/<record>.e2e.js`: starts with `useBrowser()` from `e2e/helpers/browser.js`; record from the page and from the cow's details, see it in both places, edit, delete, and check that markup in user data is shown as text.
 
 ## Security configuration
 

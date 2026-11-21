@@ -39,11 +39,22 @@ On Cattle Records, type in the search box to match cow number, name/breed, medic
 | Gender | Female or Male; optional, shown as "—" when not recorded |
 | Birth Date | Date; age is calculated from it |
 | Weight (lbs) | Greater than 0, at most 5000 |
-| Last Calving Date | Date |
+| Last Calving Date | Date. For a new cow it is saved as her first calving record. After that it is read-only and always shows her most recent calving record |
 | Expected Calving Date | Date |
 | Current Medications | Up to 500 characters |
 | Health Status | Healthy, Under Treatment, In Quarantine, or Pregnant |
 | Additional Notes | Up to 2000 characters |
+
+## Calving records
+
+Open **Calving Records** in the sidebar, or the **Calving history** tab in a cow's details (the eye button).
+
+- **Record a calving**: click Record Calving (or Record calving beside a cow that is due), choose the cow, and enter the date. Calf sex, calf number, birth weight, calving ease, outcome and notes are optional. Bulls are not offered.
+- **Add the calf as a new animal**: tick the box and enter a calf number. The calf joins the herd with that number, the calving date as its birth date, and the sex and birth weight you entered. If the number is already used, nothing is saved.
+- **Clear her expected calving date**: offered (and ticked) when the cow has an expected calving date. It removes the date and changes a Pregnant status back to Healthy.
+- **Edit or delete** a calving with the buttons on its row. Deleting a calving does not delete the calf's own record.
+
+The cow's Last Calving Date always shows her most recent calving. Deleting a cow deletes her calving records.
 
 ## Settings and password
 

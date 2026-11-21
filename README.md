@@ -8,7 +8,8 @@ Cattle Trackers is a livestock management web application: an Express server, a 
 
 - Admin account setup, login, logout, and an optional temporary demo mode
 - Per-user cattle records: add, view, edit, delete, search, and filter by health status
-- A dashboard, plus calving, medical, and breeding views that filter the cattle list
+- Calving records: a dated calving history per cow, a herd-wide Calving Records page, and adding the calf as a new animal
+- A dashboard, plus medical and breeding views that filter the cattle list
 - An admin-only user-management API
 - A Docker-based installer
 - Automated tests (unit, API, and a browser smoke test) that also run on GitHub for every push and pull request
@@ -46,7 +47,7 @@ npm test
 | `npm test` | Unit and API tests: every `test/**/*.test.js` or `.test.mjs` file | PostgreSQL |
 | `npm run test:unit` | Front-end unit tests only (`test/unit/`) | nothing |
 | `npm run test:api` | API tests only (`test/api/`) | PostgreSQL |
-| `npm run test:e2e` | Browser tests (`e2e/`, one file at a time): the smoke test (set up, sign in, add a cow, see it on the dashboard and list, delete it) and User Management (list, add, change role, delete, hidden for regular users) | PostgreSQL, Chromium |
+| `npm run test:e2e` | Browser tests (`e2e/`, one file at a time): the smoke test (set up, sign in, add a cow, see it on the dashboard and list, delete it) and one file per feature, such as `calving.e2e.js`, `settings.e2e.js` and `users.e2e.js` | PostgreSQL, Chromium |
 
 Before the first `npm run test:e2e`, install the browser once with `npx playwright install chromium` (add `--with-deps` on a fresh Linux machine).
 
@@ -55,7 +56,7 @@ How it fits together:
 - Tests use Node's built-in runner (`node:test`), `supertest` for the API, and Playwright for the browser. To run one file: `node --test test/api/cattle.test.js`.
 - `app.js` builds the Express app without listening, so tests import it directly; `server.js` is the entry point that starts it.
 - `test/helpers/api.js` prepares the schema, empties the tables before each test, and has helpers for creating users and signed-in sessions. A new API test file starts with `useDatabase()`.
-- Test files run one at a time because they share one database.
+- Test files run one at a time because they share one database. A new browser test file starts with `useBrowser()` from `e2e/helpers/browser.js`.
 - The login rate limit (20 attempts per 15 minutes) would stop the suite, so the helper sets `RATE_LIMIT_DISABLED=true`. This switch is for tests only; never set it on a real server. `test/api/rate-limit.test.js` runs with the limiter on to check it still works.
 - The browser test answers CDN requests locally (Bootstrap from `node_modules`, an empty stylesheet for Font Awesome) so it does not depend on the network. Set `E2E_REAL_CDN=true` to load the real CDN files.
 - GitHub Actions (`.github/workflows/test.yml`) runs `npm test` and `npm run test:e2e` with a PostgreSQL 16 service on every push and pull request.

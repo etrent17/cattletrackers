@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const { pool } = require('../db');
 const { requireAuth, validate } = require('../middleware/auth');
+const { withTransaction, httpError } = require('../lib/records');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -46,6 +47,8 @@ const fields = (b) => [
   b.healthStatus || 'healthy', orNull(b.notes),
 ];
 
+const LAST_CALVING_FIELD = 5; // position of lastCalvingDate in fields()
+
 router.get('/', async (req, res) => {
   const { rows } = await pool.query(
     'SELECT * FROM cattle WHERE owner_id = $1 ORDER BY created_at DESC',
@@ -54,33 +57,52 @@ router.get('/', async (req, res) => {
   res.json(rows.map(toApi));
 });
 
-router.post('/', rules, validate, async (req, res) => {
-  if (req.session.isDemo) {
-    const { rows: c } = await pool.query(
+// Inserts an animal for the signed-in user and returns the row. Shared with routes that create
+// animals as part of something else (a calf added with a calving), so the demo limit and the
+// duplicate-number rule apply everywhere. Pass the transaction's client as `db`.
+async function createCattle(db, session, data) {
+  if (session.isDemo) {
+    const { rows: c } = await db.query(
       'SELECT count(*)::int AS n FROM cattle WHERE owner_id = $1',
-      [req.session.userId]
+      [session.userId]
     );
-    if (c[0].n >= 25) {
-      return res.status(403).json({ error: 'Demo accounts are limited to 25 animals.' });
-    }
+    if (c[0].n >= 25) throw httpError(403, 'Demo accounts are limited to 25 animals.');
   }
-
-  const { rows } = await pool.query(
+  const { rows } = await db.query(
     `INSERT INTO cattle (owner_id, tag_number, name_breed, gender, birth_date, weight,
        last_calving_date, expected_calving_date, medications, health_status, notes)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-    [req.session.userId, ...fields(req.body)]
+    [session.userId, ...fields(data)]
   );
-  res.status(201).json(toApi(rows[0]));
+  return rows[0];
+}
+
+// A last calving date given with a new animal becomes her first calving event, so the column
+// always equals the newest event (see routes/calvings.js). Males never get one.
+router.post('/', rules, validate, async (req, res) => {
+  const data = { ...req.body };
+  if (data.gender === 'male') data.lastCalvingDate = null;
+  const row = await withTransaction(async (db) => {
+    const created = await createCattle(db, req.session, data);
+    if (created.last_calving_date) {
+      await db.query(
+        'INSERT INTO calving_events (cattle_id, owner_id, calving_date) VALUES ($1, $2, $3)',
+        [created.id, req.session.userId, created.last_calving_date]
+      );
+    }
+    return created;
+  });
+  res.status(201).json(toApi(row));
 });
 
+// lastCalvingDate is not updated here: it follows the animal's calving events.
 router.put('/:id', param('id').isUUID(), rules, validate, async (req, res) => {
   const { rows } = await pool.query(
     `UPDATE cattle SET tag_number=$3, name_breed=$4, gender=$5, birth_date=$6, weight=$7,
-       last_calving_date=$8, expected_calving_date=$9, medications=$10, health_status=$11,
-       notes=$12, updated_at=now()
+       expected_calving_date=$8, medications=$9, health_status=$10,
+       notes=$11, updated_at=now()
      WHERE id=$1 AND owner_id=$2 RETURNING *`,
-    [req.params.id, req.session.userId, ...fields(req.body)]
+    [req.params.id, req.session.userId, ...fields(req.body).filter((_, i) => i !== LAST_CALVING_FIELD)]
   );
   if (!rows.length) return res.status(404).json({ error: 'Cattle not found' });
   res.json(toApi(rows[0]));
@@ -96,3 +118,5 @@ router.delete('/:id', param('id').isUUID(), validate, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.toApi = toApi;
+module.exports.createCattle = createCattle;
