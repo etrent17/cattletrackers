@@ -29,8 +29,10 @@
           <li><a class="nav-link" href="#" data-view="dashboard">Dashboard</a></li>
           <li><a class="nav-link" href="#" data-view="cattle">Cattle Records</a></li>
           <li><a class="nav-link" href="#" data-view="calving">Calving Records</a></li>
+          <li><a class="nav-link" href="#" data-view="weights">Weights</a></li>
           <li><a class="nav-link" href="#" data-view="medical">Medical Records</a></li>
           <li><a class="nav-link" href="#" data-view="breeding">Breeding History</a></li>
+          <li><a class="nav-link" href="#" data-view="finance">Financial Records</a></li>
         </ul>
         <h6 class="text-muted">REPORTS</h6>
         <ul class="nav flex-column mb-3">
@@ -57,7 +59,7 @@
           <div class="row g-3 mb-4">
             <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-total">0</div>Total Cattle</div></div>
             <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-calving">0</div>Calving This Month</div></div>
-            <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-treatments">0</div>Scheduled Treatments</div></div>
+            <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-treatments">0</div>Scheduled Treatments<div class="small text-muted" id="stat-treatments-note">Due within 7 days, incl. overdue</div></div></div>
             <div class="col-6 col-lg-3"><div class="p-3 bg-light rounded"><div class="fs-3" id="stat-healthy">0</div>Healthy Animals</div></div>
           </div>
           <h4>Recent Cattle Records</h4>
@@ -69,6 +71,8 @@
           </div>
           <h4>Upcoming Events</h4>
           <ul id="events-list" class="list-group"></ul>
+          <h4 class="mt-4">Alerts</h4>
+          <ul id="alerts-list" class="list-group"><li class="list-group-item text-muted alerts-empty">No alerts.</li></ul>
         </section>
 
         <section id="view-cattle" class="app-view">
@@ -94,6 +98,146 @@
           <p id="list-empty" class="text-muted" hidden>No records found.</p>
         </section>
 
+        <!-- Calving Records page (src/controllers/CalvingController.js) -->
+        <section id="view-calving" class="app-view">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="mb-0">Calving Records</h2>
+            <button type="button" class="btn btn-success btn-calving-add">Record Calving</button>
+          </div>
+          <h4>Upcoming Expected Calvings</h4>
+          <ul id="calving-upcoming" class="list-group mb-4"></ul>
+          <h4>Calving History</h4>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6"><input id="calving-search" class="form-control" type="search" placeholder="Search by cow, calf number, or notes" aria-label="Search calving records"></div>
+            <div class="col-6 col-md-3">
+              <select id="calving-filter-outcome" class="form-select" aria-label="Filter by outcome">
+                <option value="all">All Outcomes</option>
+                <option value="alive">Alive</option>
+                <option value="stillborn">Stillborn</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <select id="calving-filter-year" class="form-select" aria-label="Filter by year"><option value="all">All Years</option></select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Date</th><th>Cow</th><th>Calf</th><th>Birth Weight</th><th>Ease</th><th>Outcome</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="calving-body"></tbody>
+            </table>
+          </div>
+          <p id="calving-empty" class="text-muted mt-2" hidden>No calvings recorded yet.</p>
+          <p id="calving-count" class="text-muted small mt-2"></p>
+        </section>
+
+        <!-- Breeding History page (src/controllers/BreedingController.js) -->
+        <section id="view-breeding" class="app-view">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="mb-0">Breeding History</h2>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-outline-success btn-pregcheck-add">Record Pregnancy Check</button>
+              <button type="button" class="btn btn-success btn-breeding-add">Record Breeding</button>
+            </div>
+          </div>
+          <h4>Needs Pregnancy Check</h4>
+          <p id="breeding-needs-help" class="text-muted small mb-2">Cows bred more than 35 days ago with no pregnancy check since.</p>
+          <ul id="breeding-needs-check" class="list-group mb-4"></ul>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6"><input id="breeding-search" class="form-control" type="search" placeholder="Search by cow, sire, technician, or notes" aria-label="Search breeding records"></div>
+          </div>
+          <h4>Breedings</h4>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Date</th><th>Cow</th><th>Method</th><th>Sire</th><th>Technician</th><th>Expected Calving</th><th>Check</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="breeding-body"></tbody>
+            </table>
+          </div>
+          <p id="breeding-empty" class="text-muted mt-2" hidden>No breedings recorded yet.</p>
+          <p id="breeding-count" class="text-muted small mt-2"></p>
+          <h4 class="mt-4">Pregnancy Checks</h4>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Date</th><th>Cow</th><th>Result</th><th>Method</th><th>Breeding</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="pregcheck-body"></tbody>
+            </table>
+          </div>
+          <p id="pregcheck-empty" class="text-muted mt-2" hidden>No pregnancy checks recorded yet.</p>
+        </section>
+
+        <!-- Weights page (src/controllers/WeightController.js) -->
+        <section id="view-weights" class="app-view">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="mb-0">Weights</h2>
+            <button type="button" class="btn btn-outline-success btn-weight-add">Record One Weight</button>
+          </div>
+          <form id="weight-batch-form" class="card mb-4" novalidate>
+            <div class="card-body">
+              <h4 class="card-title">Record Weights</h4>
+              <p class="text-muted small">Weigh several animals on one date. Rows left empty are skipped; rows that can't be saved stay here with the reason. Weights in lbs.</p>
+              <div class="row g-2 align-items-end mb-3">
+                <div class="col-sm-6 col-md-4"><label class="form-label" for="weight-batch-date">Weighing Date</label><input id="weight-batch-date" type="date" class="form-control"></div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-2">
+                  <thead><tr><th class="w-50">Animal</th><th>Weight (lbs)</th><th>Notes</th><th><span class="visually-hidden">Remove</span></th></tr></thead>
+                  <tbody id="weight-batch-body"></tbody>
+                </table>
+              </div>
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <button type="button" id="weight-batch-add-row" class="btn btn-sm btn-outline-secondary">Add Row</button>
+                <button type="button" id="weight-batch-fill" class="btn btn-sm btn-outline-secondary">Add All Animals</button>
+                <button type="submit" class="btn btn-success ms-auto">Save Weights</button>
+              </div>
+              <p id="weight-batch-result" class="small mb-0 mt-2" role="status" hidden></p>
+            </div>
+          </form>
+          <h4>Weight History</h4>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6"><input id="weight-search" class="form-control" type="search" placeholder="Search by cow or notes" aria-label="Search weighings"></div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Date</th><th>Animal</th><th>Weight</th><th>Change</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="weights-body"></tbody>
+            </table>
+          </div>
+          <p id="weights-empty" class="text-muted mt-2" hidden>No weighings recorded yet.</p>
+          <p id="weights-count" class="text-muted small mt-2"></p>
+        </section>
+
+        <!-- Medical Records page (src/controllers/TreatmentController.js) -->
+        <section id="view-medical" class="app-view">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="mb-0">Medical Records</h2>
+            <button type="button" class="btn btn-success btn-treatment-add">Record Treatment</button>
+          </div>
+          <h4>Upcoming and Overdue</h4>
+          <ul id="treatment-due" class="list-group mb-4"></ul>
+          <h4>Withdrawal Periods</h4>
+          <ul id="treatment-withdrawals" class="list-group mb-4"></ul>
+          <h4>Treatment History</h4>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6"><input id="treatment-search" class="form-control" type="search" placeholder="Search by animal, product, given by, or notes" aria-label="Search treatments"></div>
+            <div class="col-md-3">
+              <select id="treatment-filter-type" class="form-select" aria-label="Filter by type">
+                <option value="all">All Types</option>
+                <option value="treatment">Treatment</option>
+                <option value="vaccination">Vaccination</option>
+                <option value="vet_visit">Vet visit</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Date</th><th>Animal</th><th>Type</th><th>Product</th><th>Given By</th><th>Next Due</th><th>Withdrawal Until</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="treatment-body"></tbody>
+            </table>
+          </div>
+          <p id="treatment-empty" class="text-muted mt-2" hidden>No treatments recorded yet.</p>
+          <p id="treatment-count" class="text-muted small mt-2"></p>
+        </section>
+
         <section id="view-secondary" class="app-view">
           <h2 id="secondary-view-title">Overview</h2>
           <div id="secondary-view-body"></div>
@@ -116,10 +260,10 @@
             <div class="col-md-4"><label class="form-label" for="f-gender">Gender</label>
               <select id="f-gender" class="form-select"><option value="">Select Gender</option><option value="female">Female</option><option value="male">Male</option></select></div>
             <div class="col-md-4"><label class="form-label" for="f-birth">Birth Date</label><input id="f-birth" type="date" class="form-control"></div>
-            <div class="col-md-4"><label class="form-label" for="f-weight">Weight (lbs)</label><input id="f-weight" type="number" min="0" step="0.1" class="form-control"></div>
-            <div class="col-md-6"><label class="form-label" for="f-last-calving">Last Calving Date</label><input id="f-last-calving" type="date" class="form-control"></div>
-            <div class="col-md-6"><label class="form-label" for="f-expected-calving">Expected Calving Date</label><input id="f-expected-calving" type="date" class="form-control"></div>
-            <div class="col-md-6"><label class="form-label" for="f-meds">Current Medications</label><input id="f-meds" class="form-control" maxlength="500"></div>
+            <div class="col-md-4"><label class="form-label" for="f-weight">Weight (lbs)</label><input id="f-weight" type="number" min="0" max="5000" step="0.1" class="form-control" aria-describedby="f-weight-help"><div id="f-weight-help" class="form-text"></div></div>
+            <div class="col-md-6"><label class="form-label" for="f-last-calving">Last Calving Date</label><input id="f-last-calving" type="date" class="form-control" aria-describedby="f-last-calving-help"><div id="f-last-calving-help" class="form-text"></div></div>
+            <div class="col-md-6"><label class="form-label" for="f-expected-calving">Expected Calving Date</label><input id="f-expected-calving" type="date" class="form-control" aria-describedby="f-expected-calving-help"><div id="f-expected-calving-help" class="form-text">Filled in when a breeding is recorded. You can change it.</div></div>
+            <div class="col-md-6"><label class="form-label" for="f-meds">Current Medications</label><input id="f-meds" class="form-control" maxlength="500" aria-describedby="f-meds-help"><div id="f-meds-help" class="form-text">A short note of what the animal is on now. Record dated treatments in Medical Records.</div></div>
             <div class="col-md-6"><label class="form-label" for="f-status">Health Status</label>
               <select id="f-status" class="form-select">
                 <option value="healthy">Healthy</option><option value="under_treatment">Under Treatment</option>
@@ -136,8 +280,167 @@
     </div>
   </div>
 
-  <div class="modal fade" id="viewCowModal" tabindex="-1" aria-hidden="true">
+  <!-- Record / edit a calving (src/views/CalvingView.js) -->
+  <div class="modal fade" id="calvingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form id="calving-form" class="modal-content" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="calvingModalTitle">Record Calving</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-8"><label class="form-label" for="cv-cow">Cow</label><select id="cv-cow" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label" for="cv-date">Calving Date</label><input id="cv-date" type="date" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label" for="cv-calf-sex">Calf Sex</label>
+              <select id="cv-calf-sex" class="form-select"><option value="">Not recorded</option><option value="female">Heifer (female)</option><option value="male">Bull (male)</option></select></div>
+            <div class="col-md-4"><label class="form-label" for="cv-calf-tag">Calf Number</label><input id="cv-calf-tag" class="form-control" maxlength="25"></div>
+            <div class="col-md-4"><label class="form-label" for="cv-weight">Birth Weight (lbs)</label><input id="cv-weight" type="number" min="0" max="500" step="0.1" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label" for="cv-ease">Calving Ease</label>
+              <select id="cv-ease" class="form-select"><option value="">Not recorded</option><option value="unassisted">Unassisted</option><option value="assisted">Assisted</option><option value="caesarean">Caesarean</option></select></div>
+            <div class="col-md-6"><label class="form-label" for="cv-outcome">Outcome</label>
+              <select id="cv-outcome" class="form-select"><option value="">Not recorded</option><option value="alive">Alive</option><option value="stillborn">Stillborn</option></select></div>
+            <div class="col-12"><label class="form-label" for="cv-notes">Notes</label><textarea id="cv-notes" class="form-control" rows="2" maxlength="2000"></textarea></div>
+            <div class="col-12" id="cv-create-options">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="cv-add-calf">
+                <label class="form-check-label" for="cv-add-calf">Add the calf as a new animal</label>
+                <div class="form-text">Uses the calf number as its cow number, with the calving date as birth date, plus the sex and birth weight above.</div>
+              </div>
+              <div class="form-check mt-2" id="cv-clear-expected-wrap" hidden>
+                <input class="form-check-input" type="checkbox" id="cv-clear-expected">
+                <label class="form-check-label" for="cv-clear-expected" id="cv-clear-expected-label">Clear her expected calving date</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Calving</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record / edit a breeding (src/views/BreedingView.js) -->
+  <div class="modal fade" id="breedingModal" tabindex="-1" aria-labelledby="breedingModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form id="breeding-form" class="modal-content" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="breedingModalTitle">Record Breeding</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-8"><label class="form-label" for="br-cow">Cow</label><select id="br-cow" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label" for="br-date">Breeding Date</label><input id="br-date" type="date" class="form-control" aria-describedby="br-expected"></div>
+            <div class="col-12"><div id="br-expected" class="form-text"></div></div>
+            <div class="col-md-4"><label class="form-label" for="br-method">Method</label>
+              <select id="br-method" class="form-select"><option value="">Not recorded</option><option value="ai">AI</option><option value="natural">Natural</option></select></div>
+            <div class="col-md-8"><label class="form-label" for="br-sire-bull">Sire</label><select id="br-sire-bull" class="form-select"></select></div>
+            <div class="col-md-8" id="br-sire-wrap"><label class="form-label" for="br-sire">Sire name or code</label><input id="br-sire" class="form-control" maxlength="100" placeholder="For example an AI bull's name or straw code"></div>
+            <div class="col-md-4"><label class="form-label" for="br-technician">Technician</label><input id="br-technician" class="form-control" maxlength="100"></div>
+            <div class="col-12"><label class="form-label" for="br-notes">Notes</label><textarea id="br-notes" class="form-control" rows="2" maxlength="2000"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Breeding</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record / edit a pregnancy check (src/views/BreedingView.js) -->
+  <div class="modal fade" id="pregcheckModal" tabindex="-1" aria-labelledby="pregcheckModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form id="pregcheck-form" class="modal-content" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="pregcheckModalTitle">Record Pregnancy Check</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-8"><label class="form-label" for="pc-cow">Cow</label><select id="pc-cow" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label" for="pc-date">Check Date</label><input id="pc-date" type="date" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label" for="pc-result">Result</label>
+              <select id="pc-result" class="form-select" aria-describedby="pc-result-help"><option value="">Choose a result</option><option value="pregnant">Pregnant</option><option value="open">Open (not pregnant)</option><option value="unsure">Unsure</option></select>
+              <div id="pc-result-help" class="form-text">Pregnant marks a Healthy cow Pregnant. Open clears her expected calving date and Pregnant status.</div></div>
+            <div class="col-md-6"><label class="form-label" for="pc-method">Method</label>
+              <select id="pc-method" class="form-select"><option value="">Not recorded</option><option value="palpation">Palpation</option><option value="ultrasound">Ultrasound</option><option value="blood_test">Blood test</option><option value="other">Other</option></select></div>
+            <div class="col-12"><label class="form-label" for="pc-breeding">Breeding Checked</label><select id="pc-breeding" class="form-select"></select></div>
+            <div class="col-12"><label class="form-label" for="pc-notes">Notes</label><textarea id="pc-notes" class="form-control" rows="2" maxlength="2000"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Check</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record / edit one weighing (src/views/WeightView.js) -->
+  <div class="modal fade" id="weighingModal" tabindex="-1" aria-labelledby="weighingModalTitle" aria-hidden="true">
     <div class="modal-dialog">
+      <form id="weighing-form" class="modal-content" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="weighingModalTitle">Record Weight</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label" for="wt-cow">Animal</label><select id="wt-cow" class="form-select"></select></div>
+            <div class="col-md-6"><label class="form-label" for="wt-date">Weighing Date</label><input id="wt-date" type="date" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label" for="wt-weight">Weight (lbs)</label><input id="wt-weight" type="number" min="0.01" max="5000" step="any" inputmode="decimal" class="form-control"></div>
+            <div class="col-12"><label class="form-label" for="wt-notes">Notes</label><textarea id="wt-notes" class="form-control" rows="2" maxlength="2000"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Weighing</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record / edit a treatment (src/views/TreatmentView.js) -->
+  <div class="modal fade" id="treatmentModal" tabindex="-1" aria-labelledby="treatmentModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form id="treatment-form" class="modal-content" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="treatmentModalTitle">Record Treatment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-8"><label class="form-label" for="tr-cow">Animal</label><select id="tr-cow" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label" for="tr-date">Date Given</label><input id="tr-date" type="date" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label" for="tr-type">Type</label>
+              <select id="tr-type" class="form-select"><option value="treatment">Treatment</option><option value="vaccination">Vaccination</option><option value="vet_visit">Vet visit</option><option value="other">Other</option></select></div>
+            <div class="col-md-8"><label class="form-label" for="tr-product">Product</label>
+              <input id="tr-product" class="form-control" maxlength="100" list="tr-product-list" autocomplete="off"><datalist id="tr-product-list"></datalist></div>
+            <div class="col-md-4"><label class="form-label" for="tr-dose">Dose</label><input id="tr-dose" class="form-control" maxlength="50" placeholder="e.g. 10 mL"></div>
+            <div class="col-md-4"><label class="form-label" for="tr-route">Route</label>
+              <input id="tr-route" class="form-control" maxlength="50" list="tr-route-list" autocomplete="off"><datalist id="tr-route-list"></datalist></div>
+            <div class="col-md-4"><label class="form-label" for="tr-given-by">Given By</label><input id="tr-given-by" class="form-control" maxlength="100"></div>
+            <div class="col-md-6"><label class="form-label" for="tr-next-due">Next Due Date</label><input id="tr-next-due" type="date" class="form-control" aria-describedby="tr-next-due-help">
+              <div id="tr-next-due-help" class="form-text">For a booster or follow-up. It shows under Upcoming until a later treatment of the same type and product is recorded for this animal.</div></div>
+            <div class="col-md-6"><label class="form-label" for="tr-withdrawal">Withdrawal Until</label><input id="tr-withdrawal" type="date" class="form-control" aria-describedby="tr-withdrawal-help">
+              <div id="tr-withdrawal-help" class="form-text">Last day of the meat or milk withdrawal period from the product label. The animal is marked until then.</div></div>
+            <div class="col-12"><label class="form-label" for="tr-notes">Notes</label><textarea id="tr-notes" class="form-control" rows="2" maxlength="2000"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Treatment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="viewCowModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="viewCowModalTitle">Animal Details</h5>
@@ -146,6 +449,36 @@
         <div class="modal-body" id="viewCowModalBody"></div>
         <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Financial records (feature 11): add/edit transaction, driven by FinanceController -->
+  <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalTitle" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="transaction-form" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="transactionModalTitle">Add Transaction</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label" for="t-date">Date</label><input id="t-date" type="date" class="form-control" required></div>
+            <div class="col-md-6"><label class="form-label" for="t-kind">Type</label>
+              <select id="t-kind" class="form-select"><option value="expense">Expense</option><option value="income">Income</option></select></div>
+            <div class="col-md-6"><label class="form-label" for="t-category">Category</label>
+              <input id="t-category" class="form-control" list="t-category-list" required maxlength="50" autocomplete="off">
+              <datalist id="t-category-list"></datalist></div>
+            <div class="col-md-6"><label class="form-label" for="t-amount">Amount ($)</label>
+              <input id="t-amount" class="form-control" required inputmode="decimal" autocomplete="off" placeholder="0.00" maxlength="13"></div>
+            <div class="col-12"><label class="form-label" for="t-cattle">Animal (optional)</label><select id="t-cattle" class="form-select"></select></div>
+            <div class="col-12"><label class="form-label" for="t-description">Description</label><textarea id="t-description" class="form-control" rows="2" maxlength="500"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Transaction</button>
+        </div>
+      </form>
     </div>
   </div>
 

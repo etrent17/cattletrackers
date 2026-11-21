@@ -5,7 +5,7 @@ import { parseLocalDate, todayISO } from "../utils/DateHelpers.js";
 // Errors thrown here carry `status` (HTTP status, or 0 when the server could not
 // be reached) and `sessionExpired` (true on 401, after the redirect to sign in has
 // started), so callers can skip their own message while the page navigates away.
-async function api(path, options = {}) {
+export async function api(path, options = {}) {
   let res;
   try {
     res = await fetch(path, {
@@ -44,7 +44,8 @@ export class CattleService {
     if (!validateWeight(data.weight)) throw new Error("Invalid weight");
     const created = await api("/api/cattle", {
       method: "POST",
-      body: JSON.stringify({ ...data, weight: data.weight ? parseFloat(data.weight) : null }),
+      // A weight becomes the animal's first weighing, dated today (the user's local date).
+      body: JSON.stringify({ ...data, weight: data.weight ? parseFloat(data.weight) : null, weightDate: todayISO() }),
     });
     const cattle = new Cattle(created);
     this.cattle.unshift(cattle);
@@ -56,7 +57,9 @@ export class CattleService {
     if (!existing) throw new Error("Cattle not found");
     const updated = await api(`/api/cattle/${encodeURIComponent(id)}`, {
       method: "PUT",
-      body: JSON.stringify({ ...data, weight: data.weight ? parseFloat(data.weight) : null }),
+      // A weight different from the current one is recorded as a new weighing dated today; the
+      // same weight or a blank one records nothing (see PUT /api/cattle/:id).
+      body: JSON.stringify({ ...data, weight: data.weight ? parseFloat(data.weight) : null, weightDate: todayISO() }),
     });
     existing.update(updated);
     return existing;
@@ -123,8 +126,6 @@ export class CattleService {
       total: this.cattle.length,
       healthy: this.cattle.filter((cow) => cow.healthStatus === "healthy").length,
       calvingThisMonth,
-      // Current treatment status is a proxy, not a treatment schedule.
-      scheduledTreatments: this.cattle.filter((cow) => cow.healthStatus === "under_treatment").length,
     };
   }
 }

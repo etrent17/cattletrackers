@@ -73,13 +73,33 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
+// Event records: the nested router goes before /api/cattle so it sees /api/cattle/:cattleId/<records> first.
+const calvings = require('./routes/calvings');
+app.use('/api/cattle/:cattleId/calvings', calvings.forCattle);
+app.use('/api/calvings', calvings.router);
+const treatments = require('./routes/treatments');
+app.use('/api/cattle/:cattleId/treatments', treatments.forCattle);
+app.use('/api/treatments', treatments.router);
+const breedings = require('./routes/breedings');
+const pregnancyChecks = require('./routes/pregnancy-checks');
+app.use('/api/cattle/:cattleId/breedings', breedings.forCattle);
+app.use('/api/breedings', breedings.router);
+app.use('/api/cattle/:cattleId/pregnancy-checks', pregnancyChecks.forCattle);
+app.use('/api/pregnancy-checks', pregnancyChecks.router);
+const weighings = require('./routes/weighings');
+app.use('/api/cattle/:cattleId/weighings', weighings.forCattle);
+app.use('/api/weighings', weighings.router);
 app.use('/api/cattle', require('./routes/cattle'));
+app.use('/api/transactions', require('./routes/transactions'));
+app.use('/api/reports', require('./routes/reports'));
 
 app.use((err, req, res, next) => {
   // Body the JSON parser could not read (malformed JSON, too large): a client error, not a server error
   if (err.type && err.status >= 400 && err.status < 500) {
     return res.status(err.status).json({ error: err.status === 413 ? 'Request too large' : 'Invalid request body' });
   }
+  // Thrown on purpose by a route (lib/records.js httpError), usually to roll back a transaction
+  if (err.httpStatus) return res.status(err.httpStatus).json({ error: err.message });
   if (err.code === '23505') {
     const msg = err.constraint === 'users_email_key' ? 'That email is already registered' : 'Duplicate cow number';
     return res.status(409).json({ error: msg });

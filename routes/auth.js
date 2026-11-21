@@ -4,7 +4,7 @@ const { body } = require('express-validator');
 const { pool } = require('../db');
 const { hashPassword, verifyPassword, dummyHash } = require('../lib/password');
 const { createDemoUser } = require('../lib/demo');
-const { validate } = require('../middleware/auth');
+const { requireAuth, validate } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -23,6 +23,18 @@ const demoLimiter = rateLimit({
   legacyHeaders: false,
   skip: skipLimit,
   message: { error: 'Too many demo sessions from your network. Please try again later.' },
+});
+
+// Password changes are limited per signed-in user (requireAuth runs first), so a stolen
+// session cannot be used to guess the current password quickly.
+const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipLimit,
+  keyGenerator: (req) => `user:${req.session.userId}`,
+  message: { error: 'Too many password change attempts. Please try again later.' },
 });
 
 const emailRule = body('email').isString().trim().toLowerCase().isEmail().withMessage('Enter a valid email');
@@ -103,6 +115,58 @@ router.post('/demo', demoLimiter, async (req, res) => {
   await startSession(req, user, { isDemo: true });
   res.status(201).json({ user });
 });
+
+const CURRENT_PASSWORD_MSG = 'Enter your current password';
+const NEW_PASSWORD_MSG = 'New password must be 10 to 128 characters';
+
+// Changes the signed-in user's password. The current password is checked with argon2.
+// On success every other session of the user is deleted (other browsers and devices are
+// signed out) and the current session is regenerated with a new ID, so a session ID that
+// leaked before the change is no longer valid.
+router.post('/password',
+  requireAuth,
+  passwordLimiter,
+  body('currentPassword').isString().withMessage(CURRENT_PASSWORD_MSG).bail().notEmpty().withMessage(CURRENT_PASSWORD_MSG),
+  body('newPassword').isString().withMessage(NEW_PASSWORD_MSG).bail()
+    .isLength({ min: 10, max: 128 }).withMessage(NEW_PASSWORD_MSG),
+  validate,
+  async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const { rows } = await pool.query(
+      'SELECT id, email, role, password_hash, is_demo FROM users WHERE id = $1',
+      [req.session.userId]
+    );
+    const user = rows[0];
+    if (!user) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ error: 'Session expired' });
+    }
+    if (user.is_demo) return res.status(403).json({ error: "Demo accounts can't change their password" });
+    if (!(await verifyPassword(user.password_hash, currentPassword))) {
+      // 400, not 401: the browser treats 401 as "signed out" and would leave the page.
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+    if (newPassword === currentPassword) {
+      return res.status(400).json({ error: 'New password must be different from the current one' });
+    }
+
+    const hash = await hashPassword(newPassword);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, user.id]);
+      await client.query("DELETE FROM session WHERE sid <> $1 AND sess->>'userId' = $2", [req.sessionID, String(user.id)]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+    await startSession(req, user);
+    res.json({ ok: true });
+  }
+);
 
 router.post('/logout', (req, res) => {
   req.session.destroy(() => {

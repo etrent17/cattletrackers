@@ -36,7 +36,7 @@ aside .nav-link.active {
   font-weight: 600;
 }
 
-.table-responsive { background: #fff; border-radius: .5rem; }
+.table-responsive { position: relative; background: #fff; border-radius: .5rem; } /* keeps visually-hidden spans inside the scroll area on phones */
 .table { margin-bottom: 0; }
 .badge-cow { background: var(--green-100); color: var(--green-900); }
 .status-indicator {
@@ -74,4 +74,60 @@ aside .nav-link.active {
 }
 @media (prefers-reduced-motion: reduce) {
   .toast-notification { transition: none; }
+}
+
+/* Weight history chart (src/views/WeightView.js) */
+.weight-chart { display: block; width: 100%; height: auto; max-height: 260px; background: #fff; border-radius: .5rem; }
+.weight-chart-grid { stroke: #e3e6e4; stroke-width: 1; }
+.weight-chart-label { fill: #5c6b62; font-size: 12px; }
+.weight-chart-line { fill: none; stroke: var(--green-700); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.weight-chart-dot { fill: var(--green-700); stroke: #fff; stroke-width: 2; }
+.weight-chart-point:hover .weight-chart-dot { r: 6; }
+.weight-notes { min-width: 8rem; overflow-wrap: anywhere; }
+/* Batch entry: keep inputs usable on phones; the table scrolls sideways instead. */
+#weight-batch-body .wb-cow { min-width: 11rem; }
+#weight-batch-body .wb-weight { min-width: 6rem; }
+#weight-batch-body .wb-notes { min-width: 9rem; }
+
+/* Performance and Health Reports (src/views/ReportsView.js) */
+.rep-chart { display: block; width: 100%; height: auto; background: #fff; border-radius: .5rem; }
+.rep-chart-grid { stroke: #e3e6e4; stroke-width: 1; }
+.rep-chart-label { fill: #5c6b62; font-size: 11px; }
+.rep-chart-value { fill: var(--ink); font-size: 12px; font-weight: 600; }
+.rep-chart-bar { fill: var(--green-700); }
+.rep-chart-hit { fill: transparent; }
+.rep-chart-column:hover .rep-chart-bar { fill: var(--green-900); }
+.rep-chart-column:hover .rep-chart-hit { fill: rgba(31, 90, 53, .06); }
+/* Bars inside tables: a share of a whole, and one month's treatments stacked by type. */
+.rep-track { height: .5rem; min-width: 4rem; background: #eef1ee; border-radius: .25rem; overflow: hidden; }
+.rep-fill { height: 100%; background: var(--green-700); border-radius: 0 .25rem .25rem 0; }
+.rep-stack { display: flex; gap: 2px; height: .75rem; min-width: .5rem; }
+.rep-seg { flex: 1 0 0; min-width: 3px; }
+.rep-seg:last-child { border-radius: 0 4px 4px 0; }
+.rep-legend { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+.rep-swatch { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .35rem; }
+/* Treatment types, in a fixed order (a palette checked for colour-blind separation). */
+.rep-type-treatment { background: #2a78d6; }
+.rep-type-vaccination { background: #eb6834; }
+.rep-type-vet_visit { background: #1baf7a; }
+.rep-type-other { background: #eda100; }
+.rep-notes li { margin-bottom: .25rem; }
+
+/* Printing a page (the Print button on the report pages): the content only, on white paper. */
+@media print {
+  body { background: #fff; }
+  nav.navbar, aside, #error-banner, .toast-notification, .btn, #rep-filter, #fin-filter, .modal, .modal-backdrop { display: none !important; }
+  main { flex: 0 0 100% !important; width: 100% !important; max-width: 100% !important; padding-top: 0 !important; }
+  .table-responsive { overflow: visible !important; }
+  .table { font-size: .85rem; }
+  .table th, .table td { border-color: #999 !important; }
+  thead { display: table-header-group; } /* repeat the header when a table runs over a page */
+  tr, .rep-section h5, .rep-chart { break-inside: avoid; }
+  .rep-section h5 { break-after: avoid; }
+  .bg-white.rounded.border { border-color: #999 !important; }
+  /* Bars and badges are data here, so keep their colours on paper. */
+  .rep-chart-bar, .rep-fill, .rep-track, .rep-seg, .rep-swatch, .badge, .progress-bar {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }

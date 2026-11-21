@@ -37,12 +37,14 @@ See "Running the tests" in the [README](../README.md). The automated tests do no
 - [ ] Dashboard cards show correct counts
 - [ ] Recent table, events, and alerts render
 - [ ] All Cattle table renders
-- [ ] Calving, Medical, and Breeding views filter correctly
+- [ ] Medical and Breeding views filter correctly
+- [ ] Calving Records: record a calving, see it on the page and in the cow's Calving history tab; her last calving date updates; "Add the calf as a new animal" creates the calf
 - [ ] Icons display
 - [ ] Layout is usable on a phone-width screen
 
 ## Reports and settings
-- [ ] Confirm each report page is still a placeholder
+- [ ] Performance, Health and Financial Reports each show their own figures; changing the period updates them
+- [ ] Export CSV on a report table opens in a spreadsheet; Print shows the report without the menu and buttons
 - [ ] Settings text matches real behavior
 
 ## Permissions

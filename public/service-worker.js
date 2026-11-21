@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cattle-trackers-v10';
+const CACHE_NAME = 'cattle-trackers-v16';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -8,7 +8,29 @@ const urlsToCache = [
   '/src/auth.js',
   '/src/app.js',
   '/src/controllers/CattleController.js',
+  '/src/controllers/UsersController.js',
+  '/src/controllers/CalvingController.js',
+  '/src/services/CalvingService.js',
+  '/src/views/CalvingView.js',
+  '/src/controllers/TreatmentController.js',
+  '/src/services/TreatmentService.js',
+  '/src/views/TreatmentView.js',
+  '/src/controllers/BreedingController.js',
+  '/src/services/BreedingService.js',
+  '/src/views/BreedingView.js',
+  '/src/controllers/WeightController.js',
+  '/src/services/WeightService.js',
+  '/src/views/WeightView.js',
+  '/src/controllers/FinanceController.js',
+  '/src/services/FinanceService.js',
+  '/src/utils/csv.js',
+  '/src/utils/money.js',
+  '/src/views/FinanceView.js',
+  '/src/controllers/ReportsController.js',
+  '/src/services/ReportsService.js',
+  '/src/views/ReportsView.js',
   '/src/models/Cattle.js',
+  '/src/services/AccountService.js',
   '/src/services/CattleService.js',
   '/src/utils/DateHelpers.js',
   '/src/utils/escapeHtml.js',
@@ -17,6 +39,8 @@ const urlsToCache = [
   '/src/views/DashboardView.js',
   '/src/views/FormView.js',
   '/src/views/ListView.js',
+  '/src/views/SettingsView.js',
+  '/src/views/UsersView.js',
 ];
 
 self.addEventListener('install', (event) => {

@@ -2,22 +2,25 @@
 
 Cattle Trackers is a livestock management web application: an Express server, a PostgreSQL database, a REST API, and a Bootstrap-based browser interface written as ES modules.
 
-> **Status: early prototype.** These docs describe the source at commit `7fb8152`. Nothing has been verified by browser testing yet. Read [known issues](docs/known-issues.md) before relying on any workflow.
+> **Status: prototype under active development.** Features are built on their own branches (see the [roadmap](docs/roadmap.md)) and covered by automated unit, API, and browser tests. Read [known issues](docs/known-issues.md) before relying on any workflow.
 
 ## What exists today
 
 - Admin account setup, login, logout, and an optional temporary demo mode
 - Per-user cattle records: add, view, edit, delete, search, and filter by health status
-- A dashboard, plus calving, medical, and breeding views that filter the cattle list
-- An admin-only user-management API
+- Calving records: a dated calving history per cow, a herd-wide Calving Records page, and adding the calf as a new animal
+- Medical records: treatments, vaccinations and vet visits, with upcoming and overdue follow-ups and withdrawal-period markers
+- Breeding records: breedings and pregnancy checks, with the expected calving date worked out automatically and a "needs pregnancy check" list
+- Weight tracking: weighing history, batch entry, a weight chart and average daily gain per animal
+- A dashboard with herd statistics, upcoming calvings, treatments due, and alerts
+- Financial records (income and expenses, optionally per animal) with CSV export, and a Financial Reports page
+- Performance Reports (herd size over time, calving rate and interval, average daily gain, conception rate) and Health Reports (treatments by type and month, animals under treatment, in quarantine or in withdrawal, overdue and upcoming follow-ups), each with a period filter, CSV export and a print layout
+- User management for admins (add, remove, change roles), and a settings page with password change
 - A Docker-based installer
 - Automated tests (unit, API, and a browser smoke test) that also run on GitHub for every push and pull request
 
 ## What does not exist yet
 
-- Financial records of any kind
-- Distinct performance, health, or financial reports (those screens are placeholders)
-- A user-management screen
 - Offline editing of cattle data
 
 ## Quick start
@@ -46,7 +49,7 @@ npm test
 | `npm test` | Unit and API tests: every `test/**/*.test.js` or `.test.mjs` file | PostgreSQL |
 | `npm run test:unit` | Front-end unit tests only (`test/unit/`) | nothing |
 | `npm run test:api` | API tests only (`test/api/`) | PostgreSQL |
-| `npm run test:e2e` | Browser smoke test (`e2e/`): set up, sign in, add a cow, see it on the dashboard and list, delete it | PostgreSQL, Chromium |
+| `npm run test:e2e` | Browser tests (`e2e/`, one file at a time): the smoke test (set up, sign in, add a cow, see it on the dashboard and list, delete it) and one file per feature, such as `calving.e2e.js`, `finance.e2e.js`, `settings.e2e.js` and `users.e2e.js` | PostgreSQL, Chromium |
 
 Before the first `npm run test:e2e`, install the browser once with `npx playwright install chromium` (add `--with-deps` on a fresh Linux machine).
 
@@ -55,7 +58,7 @@ How it fits together:
 - Tests use Node's built-in runner (`node:test`), `supertest` for the API, and Playwright for the browser. To run one file: `node --test test/api/cattle.test.js`.
 - `app.js` builds the Express app without listening, so tests import it directly; `server.js` is the entry point that starts it.
 - `test/helpers/api.js` prepares the schema, empties the tables before each test, and has helpers for creating users and signed-in sessions. A new API test file starts with `useDatabase()`.
-- Test files run one at a time because they share one database.
+- Test files run one at a time because they share one database. A new browser test file starts with `useBrowser()` from `e2e/helpers/browser.js`.
 - The login rate limit (20 attempts per 15 minutes) would stop the suite, so the helper sets `RATE_LIMIT_DISABLED=true`. This switch is for tests only; never set it on a real server. `test/api/rate-limit.test.js` runs with the limiter on to check it still works.
 - The browser test answers CDN requests locally (Bootstrap from `node_modules`, an empty stylesheet for Font Awesome) so it does not depend on the network. Set `E2E_REAL_CDN=true` to load the real CDN files.
 - GitHub Actions (`.github/workflows/test.yml`) runs `npm test` and `npm run test:e2e` with a PostgreSQL 16 service on every push and pull request.

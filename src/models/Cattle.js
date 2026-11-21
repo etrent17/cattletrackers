@@ -8,6 +8,7 @@ export class Cattle {
     this.lastCalvingDate = data.lastCalvingDate || null;
     this.expectedCalvingDate = data.expectedCalvingDate || null;
     this.medications = data.medications || "";
+    this.withdrawalUntil = data.withdrawalUntil || ""; // read-only, follows the treatments
     this.weight = data.weight || null;
     this.healthStatus = this.normalizeStatus(data.healthStatus);
     this.notes = data.notes || "";
@@ -30,6 +31,7 @@ export class Cattle {
     if (data.lastCalvingDate !== undefined) this.lastCalvingDate = data.lastCalvingDate;
     if (data.expectedCalvingDate !== undefined) this.expectedCalvingDate = data.expectedCalvingDate;
     if (data.medications !== undefined) this.medications = data.medications;
+    if (data.withdrawalUntil !== undefined) this.withdrawalUntil = data.withdrawalUntil;
     if (data.weight !== undefined) this.weight = data.weight;
     if (data.healthStatus !== undefined) this.healthStatus = this.normalizeStatus(data.healthStatus);
     if (data.notes !== undefined) this.notes = data.notes;
@@ -46,6 +48,7 @@ export class Cattle {
       lastCalvingDate: this.lastCalvingDate,
       expectedCalvingDate: this.expectedCalvingDate,
       medications: this.medications,
+      withdrawalUntil: this.withdrawalUntil,
       weight: this.weight,
       healthStatus: this.healthStatus,
       notes: this.notes,

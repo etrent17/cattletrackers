@@ -1,10 +1,19 @@
 import { CattleService } from "../services/CattleService.js";
+import { UsersController } from "./UsersController.js";
+import { FinanceController } from "./FinanceController.js";
+import { ReportsController } from "./ReportsController.js";
 import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
+import { SettingsView } from "../views/SettingsView.js";
 import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
 import { hideErrorBanner, showErrorBanner, showToast } from "../utils/feedback.js";
 import { escapeHtml } from "../utils/escapeHtml.js";
+import { CalvingController } from "./CalvingController.js";
+import { TreatmentController } from "./TreatmentController.js";
+import { withdrawalBadge } from "../views/TreatmentView.js";
+import { BreedingController } from "./BreedingController.js";
+import { WeightController } from "./WeightController.js";
 
 export class CattleController {
   constructor() {
@@ -12,9 +21,32 @@ export class CattleController {
     this.dashboardView = new DashboardView();
     this.formView = new FormView();
     this.listView = new ListView();
+    this.settingsView = new SettingsView();
     this.editingId = null;
     this.saving = false;
     this.currentView = "dashboard";
+
+    // Record pages (calvings, and later treatments, breedings, weights). Each has its own
+    // controller, built with this `host` object, and may add a tab to the cow details modal.
+    const host = {
+      cattleService: this.cattleService,
+      reloadHerd: () => this.loadData(),
+      openCowDetails: (id, tabId) => this.handleInspect(id, tabId),
+    };
+    this.calvingController = new CalvingController(host);
+    this.treatmentController = new TreatmentController(host);
+    this.breedingController = new BreedingController(host);
+    // view name -> controller with init(), show(), hide(), render(), detailTab()
+    this.recordPages = {
+      calving: this.calvingController,
+      medical: this.treatmentController,
+      breeding: this.breedingController,
+      weights: new WeightController(host),
+    };
+    // Tabs after "Details" in the cow details modal: { id, label, appliesTo?(cow), render(cow, pane) }
+    this.detailTabs = Object.values(this.recordPages).map((page) => page.detailTab());
+    this.financeController = new FinanceController({ cattleService: this.cattleService, getCurrentView: () => this.currentView });
+    this.reportsController = new ReportsController({ getCurrentView: () => this.currentView });
   }
 
   // Listeners go on first so the page stays usable when the load fails.
@@ -67,6 +99,8 @@ export class CattleController {
     document.getElementById("search-cattle")?.addEventListener("input", () => this.renderCattleList());
     document.getElementById("filter-status")?.addEventListener("change", () => this.renderCattleList());
 
+    Object.values(this.recordPages).forEach((page) => page.init());
+
     // Event delegation for Edit / View / Delete buttons in both Dashboard & All Cattle tables
     document.body.addEventListener("click", async (e) => {
       const editBtn = e.target.closest(".btn-edit");
@@ -92,11 +126,16 @@ export class CattleController {
     });
 
     document.querySelectorAll(".app-view").forEach((sec) => sec.classList.remove("active"));
+    Object.values(this.recordPages).forEach((page) => page.hide());
 
-    if (viewName === "dashboard") {
+    if (this.recordPages[viewName]) {
+      // A record page has its own section, #view-<name>, and loads its own data.
+      document.getElementById(`view-${viewName}`).classList.add("active");
+      this.recordPages[viewName].show();
+    } else if (viewName === "dashboard") {
       document.getElementById("view-dashboard").classList.add("active");
       this.refreshAllViews();
-    } else if (["cattle", "calving", "medical", "breeding"].includes(viewName)) {
+    } else if (viewName === "cattle") {
       document.getElementById("view-cattle").classList.add("active");
       this.renderCattleList();
     } else {
@@ -105,55 +144,28 @@ export class CattleController {
     }
   }
 
-  // Renders the cattle table for the current list view (All, Calving, Medical,
-  // Breeding), narrowed by the search box and status filter.
+  // Renders the All Cattle table,
+  // narrowed by the search box and status filter.
   renderCattleList() {
-    const subViews = {
-      calving: { title: "Calving Records", filter: (c) => c.gender !== "male" && (c.lastCalvingDate || c.expectedCalvingDate) },
-      medical: { title: "Medical & Health Records", filter: (c) => c.medications || c.healthStatus !== "healthy" },
-      breeding: { title: "Breeding History", filter: (c) => c.healthStatus === "pregnant" || c.expectedCalvingDate },
-    };
-    const { title, filter } = subViews[this.currentView] || { title: "All Cattle Records", filter: () => true };
     const query = document.getElementById("search-cattle")?.value || "";
     const status = document.getElementById("filter-status")?.value || "all";
-    const matches = this.cattleService.searchCattle(query, status).filter(filter);
-    this.listView.renderList(matches, title);
+    this.listView.renderList(this.cattleService.searchCattle(query, status), "All Cattle Records");
   }
 
   renderSecondaryView(viewName) {
     const titleEl = document.getElementById("secondary-view-title");
     const bodyEl = document.getElementById("secondary-view-body");
-    const stats = this.cattleService.getStatistics();
+    if (this.financeController.handles(viewName)) return this.financeController.render(viewName, titleEl, bodyEl);
+    if (this.reportsController.handles(viewName)) return this.reportsController.render(viewName, titleEl, bodyEl);
 
-    const titles = {
-      reports: "Performance Reports",
-      "health-reports": "Health Reports",
-      "financial-reports": "Financial Reports",
-      settings: "System Settings",
-      users: "User Management",
-    };
-
-    titleEl.textContent = titles[viewName] || "Overview";
-
-    if (viewName === "settings") {
-      bodyEl.innerHTML = `
-        <p class="text-muted">Offline storage is active via browser <code>localStorage</code> and Service Worker caching.</p>
-        <button class="btn btn-outline-danger btn-sm" id="reset-demo-data-btn">Reset to Blueprint Sample Herd</button>
-      `;
-      document.getElementById("reset-demo-data-btn")?.addEventListener("click", async () => {
-        localStorage.removeItem("cattle-data");
-        if (!(await this.loadData())) return;
-        this.showNotification("Sample herd data restored", "success");
-      });
-    } else {
-      bodyEl.innerHTML = `
-        <div class="row g-3">
-          <div class="col-md-4"><div class="p-3 bg-light rounded"><strong>Total Herd Size:</strong> ${stats.total} head</div></div>
-          <div class="col-md-4"><div class="p-3 bg-light rounded"><strong>Healthy Rate:</strong> ${stats.total ? Math.round((stats.healthy / stats.total) * 100) : 0}%</div></div>
-          <div class="col-md-4"><div class="p-3 bg-light rounded"><strong>Active Treatments:</strong> ${stats.scheduledTreatments}</div></div>
-        </div>
-      `;
+    if (viewName === "users") {
+      titleEl.textContent = "User Management";
+      this.usersController ??= new UsersController({ onAccessLost: () => this.switchView("dashboard") });
+      this.usersController.show(bodyEl).catch((err) => console.error("User Management failed:", err));
+      return;
     }
+    titleEl.textContent = "System Settings";
+    this.settingsView.render(bodyEl, window.currentUser);
   }
 
   async handleFormSubmit() {
@@ -198,12 +210,30 @@ export class CattleController {
     this.formView.openModal(true);
   }
 
-  handleInspect(id) {
+  // Opens the cow details modal, or redraws it when it is already open. `activeTab` is the id of
+  // the tab to show first: "details" or one from this.detailTabs. Record tabs are drawn the first
+  // time they are shown, by their own controller.
+  handleInspect(id, activeTab = "details") {
     const c = this.cattleService.getCattleById(id);
     if (!c) return;
     const statusInfo = formatHealthStatus(c.healthStatus);
+    const tabs = this.detailTabs.filter((tab) => !tab.appliesTo || tab.appliesTo(c));
+    if (!tabs.some((tab) => tab.id === activeTab)) activeTab = "details";
+    const tabButton = (tabId, label) => `
+      <li class="nav-item" role="presentation">
+        <button type="button" class="nav-link ${tabId === activeTab ? "active" : ""}" id="cow-tab-btn-${escapeHtml(tabId)}" data-bs-toggle="tab" data-bs-target="#cow-tab-${escapeHtml(tabId)}" data-tab="${escapeHtml(tabId)}" role="tab" aria-controls="cow-tab-${escapeHtml(tabId)}" aria-selected="${tabId === activeTab}">${escapeHtml(label)}</button>
+      </li>`;
+    const paneClass = (tabId) => `tab-pane ${tabId === activeTab ? "show active" : ""}`;
+
     document.getElementById("viewCowModalTitle").textContent = `${c.nameBreed} (${c.tagNumber})`;
-    document.getElementById("viewCowModalBody").innerHTML = `
+    const bodyEl = document.getElementById("viewCowModalBody");
+    bodyEl.innerHTML = `
+      <ul class="nav nav-tabs mb-3" role="tablist">
+        ${tabButton("details", "Details")}
+        ${tabs.map((tab) => tabButton(tab.id, tab.label)).join("")}
+      </ul>
+      <div class="tab-content">
+      <div class="${paneClass("details")}" id="cow-tab-details" role="tabpanel" aria-labelledby="cow-tab-btn-details">
       <ul class="list-group list-group-flush">
         <li class="list-group-item"><strong>Cow ID:</strong> ${escapeHtml(c.tagNumber)}</li>
         <li class="list-group-item"><strong>Name / Breed:</strong> ${escapeHtml(c.nameBreed || "—")}</li>
@@ -212,12 +242,23 @@ export class CattleController {
         <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</li>
         <li class="list-group-item"><strong>Last Calving:</strong> ${escapeHtml(c.lastCalvingDate || "N/A")}</li>
         <li class="list-group-item"><strong>Expected Calving:</strong> ${escapeHtml(c.expectedCalvingDate || "N/A")}</li>
-        <li class="list-group-item"><strong>Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
+        <li class="list-group-item"><strong>Current Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
+        <li class="list-group-item"><strong>Withdrawal Period:</strong> ${withdrawalBadge(c) || escapeHtml(c.withdrawalUntil ? `Ended ${c.withdrawalUntil}` : "None")}</li>
         <li class="list-group-item"><strong>Status:</strong> <span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></li>
         <li class="list-group-item"><strong>Notes:</strong> ${escapeHtml(c.notes || "No notes recorded.")}</li>
       </ul>
+      </div>
+      ${tabs.map((tab) => `<div class="${paneClass(tab.id)}" id="cow-tab-${escapeHtml(tab.id)}" role="tabpanel" aria-labelledby="cow-tab-btn-${escapeHtml(tab.id)}"></div>`).join("")}
+      </div>
     `;
-    new bootstrap.Modal(document.getElementById("viewCowModal")).show();
+    for (const tab of tabs) {
+      const pane = document.getElementById(`cow-tab-${tab.id}`);
+      const draw = () => tab.render(c, pane);
+      if (tab.id === activeTab) draw();
+      else bodyEl.querySelector(`[data-tab="${tab.id}"]`).addEventListener("show.bs.tab", draw, { once: true });
+    }
+    this.financeController.appendCattleSection(c.id, document.getElementById("cow-tab-details"));
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("viewCowModal")).show();
   }
 
   async handleDelete(id) {
@@ -246,6 +287,7 @@ export class CattleController {
       () => this.dashboardView.renderRecentTable(this.cattleService.getRecentCattle(5)),
       () => this.dashboardView.renderUpcomingEvents(this.cattleService.getUpcomingCalvings(5)),
       () => this.renderCattleList(),
+      ...Object.values(this.recordPages).map((page) => () => page.render()),
     ];
     let failed = false;
     for (const render of parts) {
