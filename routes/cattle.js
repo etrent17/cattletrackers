@@ -19,6 +19,7 @@ const toApi = (r) => ({
   lastCalvingDate: r.last_calving_date ?? '',
   expectedCalvingDate: r.expected_calving_date ?? '',
   medications: r.medications ?? '',
+  withdrawalUntil: r.withdrawal_until ?? '', // read-only: follows the animal's treatments (routes/treatments.js)
   healthStatus: r.health_status,
   notes: r.notes ?? '',
   createdAt: r.created_at,

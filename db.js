@@ -12,6 +12,7 @@ pool.on('error', (err) => console.error('PostgreSQL idle client error:', err.mes
 async function initSchema() {
   await coreSchema();
   await calvingSchema();
+  await treatmentSchema();
   await initTransactionsSchema();
 }
 
@@ -79,6 +80,34 @@ async function calvingSchema() {
   `);
 }
 // --- end calving records --------------------------------------------------------------------
+
+// --- Medical records (feature 08) -----------------------------------------------------------
+// Treatments, vaccinations and vet visits. cattle.withdrawal_until is kept equal to the latest
+// withdrawal_until of the animal's treatments (NULL when none has one); routes/treatments.js
+// updates it in the same transaction as every treatment change.
+async function treatmentSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS treatments (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      cattle_id UUID NOT NULL REFERENCES cattle(id) ON DELETE CASCADE,
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date_given DATE NOT NULL,
+      type TEXT NOT NULL CHECK (type IN ('treatment','vaccination','vet_visit','other')),
+      product TEXT,
+      dose TEXT,
+      route TEXT,
+      given_by TEXT,
+      next_due_date DATE CHECK (next_due_date > date_given),
+      withdrawal_until DATE CHECK (withdrawal_until >= date_given),
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS treatments_cattle_idx ON treatments (cattle_id, date_given DESC);
+    CREATE INDEX IF NOT EXISTS treatments_owner_idx ON treatments (owner_id, date_given DESC);
+    ALTER TABLE cattle ADD COLUMN IF NOT EXISTS withdrawal_until DATE;
+  `);
+}
+// --- end medical records --------------------------------------------------------------------
 
 // --- Financial records (feature 11) ---------------------------------------
 // Income and expenses. `amount` is always positive; `kind` decides the sign.
