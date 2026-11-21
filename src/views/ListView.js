@@ -2,15 +2,17 @@ import { calculateAge, formatHealthStatus } from "../utils/DateHelpers.js";
 
 export class ListView {
   renderList(cattleList, title = "All Cattle Records") {
-    const titleEl = document.getElementById("records-view-title");
-    const tbody = document.getElementById("all-cattle-tbody");
+    const titleEl = document.getElementById("list-title");
+    const tbody = document.getElementById("list-body");
+    const emptyEl = document.getElementById("list-empty");
     if (titleEl) {
       titleEl.innerHTML = `<i class="fas fa-cow me-2 text-success"></i>${title}`;
     }
     if (!tbody) return;
 
+    if (emptyEl) emptyEl.hidden = cattleList.length > 0;
     if (cattleList.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No matching cattle records found.</td></tr>`;
+      tbody.innerHTML = "";
       return;
     }
 

@@ -4,16 +4,6 @@ Found by reading source at commit `7fb8152`. None has been reproduced in a brows
 
 ## Open
 
-### 1. Dashboard element IDs do not match the page
-`DashboardView` looks for `stat-total-cattle`, `stat-calving-month`, `stat-scheduled-treatments`, `stat-healthy-animals`, `recent-cattle-tbody`, `upcoming-events-list`, and `alerts-reminders-list`. `index.html` has `stat-total`, `stat-calving`, `stat-treatments`, `stat-healthy`, `recent-body`, and `events-list`, and no alerts list. `renderStats` will throw on the missing elements.
-**Fix when:** the IDs agree and the dashboard shows data.
-
-### 2. Cattle list element IDs do not match the page
-`ListView` looks for `records-view-title` and `all-cattle-tbody`; `index.html` has `list-title` and `list-body`. The All Cattle table, and its delete buttons, never render.
-
-### 3. Icons do not load
-Views use Font Awesome classes (`fas fa-*`), but `index.html` does not include a Font Awesome stylesheet.
-
 ### 4. Report pages are placeholders
 Performance, Health, and Financial reports show identical herd statistics.
 
@@ -32,8 +22,6 @@ The API exists; there is no interface.
 ### 9. Delete has no error handling
 A failed delete request raises an unhandled error.
 
-### 12. Calving-month statistic mixes date handling
-It compares a UTC month of the expected date with the local month of today, which can be off near month boundaries.
 
 ### 13. No automated tests
 `npm test` prints an error and exits.
@@ -42,7 +30,11 @@ It compares a UTC month of the expected date with the local month of today, whic
 
 - `getStatistics()` was missing from `CattleService`. Added in `e8d97e1`.
 - Inactive views stayed visible, stacking reports under tables. Fixed in `29162f2`.
-- The add/edit form used IDs that did not exist. Fixed in `7fb8152` (untested).
+- The add/edit form used IDs that did not exist. Fixed in `7fb8152`; add and edit verified in a browser on `feature/fix-core-views`.
+- **1. Dashboard element IDs did not match the page.** `DashboardView` now uses the IDs in `index.html`; the alerts code was removed because the page has no alerts list. Fixed on `feature/fix-core-views` (`0c99c91`), verified in a browser.
+- **2. Cattle list element IDs did not match the page.** `ListView` now uses `list-title`, `list-body`, and `list-empty`. Fixed on `feature/fix-core-views` (`0c99c91`), verified in a browser.
+- **3. Icons did not load.** `index.html` loads Font Awesome 6.5.2 from cdnjs. Fixed on `feature/fix-core-views` (`4b0841d`), verified in a browser.
+- **12. Calving-month statistic mixed date handling.** Dates are parsed as local calendar dates (`parseLocalDate`). Fixed on `feature/fix-core-views` (`7a983c5`), verified with browser time zones either side of UTC.
 - (10) Docker setup omitted some settings: compose did not pass `DEMO_MODE` or `COOKIE_SECURE`, and `install.sh` overwrote the Docker files on each run. The Docker files are now committed, `install.sh` only creates `.env` and runs Compose, and Compose passes `DEMO_MODE`, `COOKIE_SECURE`, and `HSTS`. Fixed on `feature/deploy-hardening` (compose validated with `docker compose config`; not run under a Docker daemon).
 - (11) Health check ignored the database: `/api/health` now runs `SELECT 1` and returns 503 when PostgreSQL is unreachable. Fixed on `feature/deploy-hardening`.
 
