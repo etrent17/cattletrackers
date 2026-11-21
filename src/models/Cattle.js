@@ -14,6 +14,8 @@ export class Cattle {
     this.notes = data.notes || "";
     this.createdAt = data.createdAt || new Date().toISOString();
     this.updatedAt = data.updatedAt || new Date().toISOString();
+    // True while a change made on this device has not reached the server yet (feature 14).
+    this.pendingSync = Boolean(data.pendingSync);
   }
 
   normalizeStatus(status) {
