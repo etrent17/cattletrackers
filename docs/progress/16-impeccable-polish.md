@@ -2,7 +2,7 @@
 
 | Branch | Phase | Status | Owner | Depends on |
 |---|---|---|---|---|
-| `feature/impeccable-polish` | 5 | Not started | — | 15 |
+| `feature/impeccable-polish` | 5 | Not started | cbik6 (runs it locally) | 15 |
 
 ## Goal
 A final quality pass over the designed app using Impeccable, fixing whatever it flags.
@@ -11,7 +11,7 @@ A final quality pass over the designed app using Impeccable, fixing whatever it 
 Runs after Emil's design (15) is applied, so the polish is done on the final look.
 
 ## Decisions needed before starting
-- [ ] Confirm how Impeccable will be run on this project and note it here
+- [x] The owner runs Impeccable in local Claude Code on this branch after 15 is merged (decided 2026-11-21)
 
 ## Tasks
 - [ ] Run Impeccable across every screen and record its findings in the progress log
