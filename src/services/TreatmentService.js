@@ -14,6 +14,12 @@ export const ROUTE_SUGGESTIONS = ["Intramuscular", "Subcutaneous", "Intravenous"
 // plus the overdue ones (which are also shown as alerts).
 export const DUE_WINDOW_DAYS = 7;
 
+// A real calendar date as `YYYY-MM-DD` (parseLocalDate alone lets 2026-02-30 roll over to March).
+const isDate = (value) => {
+  const date = parseLocalDate(value);
+  return date !== null && todayISO(date) === value;
+};
+
 const TEXT_LIMITS = [["product", 100, "Product"], ["dose", 50, "Dose"], ["route", 50, "Route"], ["givenBy", 100, "Given by"]];
 
 // Turns the form's strings into the request body: trimmed text, dates as typed.
@@ -35,18 +41,18 @@ export function treatmentPayload(form) {
 // Checks a payload before it is sent. Returns the message to show, or null when it is fine.
 // The server applies the same rules; this only saves a round trip.
 export function validateTreatment(data, today = todayISO()) {
-  if (!parseLocalDate(data.dateGiven)) return "Enter the treatment date";
+  if (!isDate(data.dateGiven)) return "Enter the treatment date";
   if (data.dateGiven > today) return "The treatment date cannot be in the future";
   if (!TYPE_LABELS[data.type]) return "Choose a treatment type";
   for (const [field, max, label] of TEXT_LIMITS) {
     if (data[field].length > max) return `${label} must be at most ${max} characters`;
   }
   if (data.nextDueDate) {
-    if (!parseLocalDate(data.nextDueDate)) return "Enter a valid next due date";
+    if (!isDate(data.nextDueDate)) return "Enter a valid next due date";
     if (data.nextDueDate <= data.dateGiven) return "The next due date must be after the date given";
   }
   if (data.withdrawalUntil) {
-    if (!parseLocalDate(data.withdrawalUntil)) return "Enter a valid withdrawal date";
+    if (!isDate(data.withdrawalUntil)) return "Enter a valid withdrawal date";
     if (data.withdrawalUntil < data.dateGiven) return "The withdrawal date cannot be before the date given";
   }
   if (data.notes.length > 2000) return "Notes are too long";
