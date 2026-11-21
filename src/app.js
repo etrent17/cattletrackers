@@ -3,7 +3,9 @@ import { CattleController } from "./controllers/CattleController.js";
 async function boot() {
   try {
     const status = await fetch("/api/auth/status", { credentials: "same-origin" }).then((r) => r.json());
-    if (status.setupRequired || !status.authenticated) return window.location.replace("/login.html");
+    // Any authenticated session (a demo session too) may use the app before the first
+    // admin exists; login.html applies the same rule, so the pages cannot loop.
+    if (!status.authenticated) return window.location.replace("/login.html");
     window.currentUser = status.user;
   } catch {
     document.body.insertAdjacentText("afterbegin", "Can't reach the server. Check your connection.");
