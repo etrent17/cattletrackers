@@ -9,10 +9,10 @@ Status key: **Not started** · **In progress** · **In review** (pull request op
 | # | Feature | Branch | Depends on | Status |
 |---|---|---|---|---|
 | **Phase 1: Working prototype** | | | | |
-| 01 | [Fix dashboard and cattle list](progress/01-fix-core-views.md) | `feature/fix-core-views` | none | Not started |
-| 02 | [Error handling](progress/02-error-handling.md) | `feature/error-handling` | 01 | Not started |
-| 03 | [Escape user input](progress/03-escape-user-input.md) | `feature/escape-user-input` | 01 | Not started |
-| 04 | [Automated tests and CI](progress/04-automated-tests.md) | `feature/automated-tests` | 01 | Not started |
+| 01 | [Fix dashboard and cattle list](progress/01-fix-core-views.md) | `feature/fix-core-views` | none | In review |
+| 02 | [Error handling](progress/02-error-handling.md) | `feature/error-handling` | 01 | In review |
+| 03 | [Escape user input](progress/03-escape-user-input.md) | `feature/escape-user-input` | 01 | In review |
+| 04 | [Automated tests and CI](progress/04-automated-tests.md) | `feature/automated-tests` | 01 | In review |
 | **Phase 2: Replace placeholders** | | | | |
 | 05 | [Settings and account](progress/05-settings-cleanup.md) | `feature/settings-cleanup` | 01 | Not started |
 | 06 | [User management screen](progress/06-user-management-ui.md) | `feature/user-management-ui` | 01 | Not started |
@@ -23,7 +23,7 @@ Status key: **Not started** · **In progress** · **In review** (pull request op
 | 11 | [Financial records](progress/11-financial-records.md) | `feature/financial-records` | 01, 02 | Not started |
 | 12 | [Performance and health reports](progress/12-reports.md) | `feature/reports` | 07, 08, 09, 10 | Not started |
 | **Phase 3: Deployment** | | | | |
-| 13 | [Deployment hardening](progress/13-deploy-hardening.md) | `feature/deploy-hardening` | none | Not started |
+| 13 | [Deployment hardening](progress/13-deploy-hardening.md) | `feature/deploy-hardening` | none | Done |
 | **Phase 4: Later** | | | | |
 | 14 | [Offline editing](progress/14-offline-editing.md) | `feature/offline-editing` | 02, 04 | Not started |
 | **Phase 5: Design (after everything is functional)** | | | | |
