@@ -16,6 +16,10 @@
       <button id="logout-btn" type="button" class="btn btn-outline-light btn-sm">Sign out</button>
     </div>
   </nav>
+  <div id="error-banner" class="alert alert-danger rounded-0 mb-0 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert" hidden>
+    <span id="error-banner-text"></span>
+    <button id="error-banner-retry" type="button" class="btn btn-sm btn-danger">Retry</button>
+  </div>
 
   <div class="container-fluid">
     <div class="row">
@@ -42,10 +46,6 @@
       </aside>
 
       <main class="col-md-9 col-lg-10 py-4">
-        <div id="error-banner" class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert" hidden>
-          <span id="error-banner-text"></span>
-          <button id="error-banner-retry" type="button" class="btn btn-sm btn-danger">Retry</button>
-        </div>
         <section id="view-dashboard" class="app-view active">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
