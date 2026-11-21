@@ -28,6 +28,11 @@
 //   server error       (500 and the like) treated as "no answer" twice; refused the third time,
 //                      so one bad record cannot block the queue forever.
 //
+// Before anything is sent, replay checks that the session still belongs to the account the
+// outbox was filled under (`whoAmI`). The browser's session can change under an open page (the
+// session ran out and someone else signed in from another tab); that account must not receive
+// these changes.
+//
 // An op only ever leaves the outbox in the same store transaction that either records the
 // server's answer or adds it to `unsynced`. Nothing is dropped anywhere else.
 import { todayISO } from "../utils/DateHelpers.js";
@@ -120,9 +125,11 @@ const labelOf = (data, fallback = "") => {
 export class SyncEngine {
   // request(path, options) resolves to the parsed JSON body, or rejects with an Error carrying
   // `status` (0 = no answer) and `data` (the error body): CattleService.api.
-  constructor({ store, request, today = todayISO, now = () => new Date().toISOString(), newId = newUuid, locks = globalThis.navigator?.locks, isOnline = () => true }) {
+  // whoAmI() (optional) resolves to the id of the signed-in user, or null when nobody is.
+  constructor({ store, request, whoAmI = null, today = todayISO, now = () => new Date().toISOString(), newId = newUuid, locks = globalThis.navigator?.locks, isOnline = () => true }) {
     this.store = store;
     this.request = request;
+    this.whoAmI = whoAmI;
     this.today = today;
     this.now = now;
     this.newId = newId;
@@ -251,8 +258,9 @@ export class SyncEngine {
   // Sends the outbox. Never rejects. Resolves to
   //   { synced, rejected, remaining, stopped }
   // where `stopped` is null when the queue was worked through, "unreachable" when the server gave
-  // no answer, "error" on a server error or a local failure, and "busy" when another tab is
-  // already replaying. Calls made while a replay is running share its result.
+  // no answer, "error" on a server error or a local failure, "busy" when another tab is already
+  // replaying, "signed-out" when nobody is signed in, and "account" when a different account is
+  // (nothing is sent in those two cases). Calls made while a replay is running share its result.
   replay() {
     this.running ??= this.exclusive().finally(() => {
       this.running = null;
@@ -277,8 +285,25 @@ export class SyncEngine {
     return { synced: 0, rejected: 0, stopped: null, ...fields, remaining: (await this.state()).outbox.length };
   }
 
+  // Why nothing may be sent right now, or null when the session is the outbox's own account.
+  async sessionProblem() {
+    if (!this.whoAmI) return null;
+    const state = await this.state();
+    if (!state.outbox.length) return null;
+    let id;
+    try {
+      id = await this.whoAmI();
+    } catch (err) {
+      return RETRY_LATER.has(err?.status) ? "unreachable" : "error";
+    }
+    if (id === null || id === undefined) return "signed-out";
+    return state.user && state.user.id !== id ? "account" : null;
+  }
+
   async drain() {
     const counts = { synced: 0, rejected: 0, stopped: null };
+    const problem = await this.sessionProblem();
+    if (problem) return this.summary({ stopped: problem });
     for (;;) {
       // Mark the op as sent before sending it: from here on the server may have it.
       let op = null;

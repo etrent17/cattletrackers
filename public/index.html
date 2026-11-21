@@ -20,6 +20,18 @@
     <span id="error-banner-text"></span>
     <button id="error-banner-retry" type="button" class="btn btn-sm btn-danger">Retry</button>
   </div>
+  <!-- Offline editing (src/controllers/SyncController.js): offline notice, changes waiting, changes refused -->
+  <div id="sync-banner" class="alert alert-warning rounded-0 mb-0 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2" role="status" hidden>
+    <span>
+      <span id="sync-offline-text" hidden></span>
+      <strong id="sync-pending-text" hidden></strong>
+      <strong id="sync-unsynced-text" hidden></strong>
+    </span>
+    <span class="d-flex flex-wrap gap-2">
+      <button id="sync-now-btn" type="button" class="btn btn-sm btn-outline-dark" hidden>Sync now</button>
+      <button id="unsynced-review-btn" type="button" class="btn btn-sm btn-dark" hidden>Review</button>
+    </span>
+  </div>
 
   <div class="container-fluid">
     <div class="row">
@@ -236,6 +248,16 @@
           </div>
           <p id="treatment-empty" class="text-muted mt-2" hidden>No treatments recorded yet.</p>
           <p id="treatment-count" class="text-muted small mt-2"></p>
+        </section>
+
+        <!-- Shown instead of a page that needs the server while offline (CattleController.switchView) -->
+        <section id="view-needs-connection" class="app-view">
+          <h2 id="needs-connection-title"></h2>
+          <div class="alert alert-warning" role="status">
+            <p class="mb-2"><strong>This page needs a connection.</strong> Its records are kept on the server and can't be viewed or changed while you are offline.</p>
+            <p class="mb-3">The Dashboard and Cattle Records still work: you can view, add, edit and delete cattle, and your changes sync when the connection returns.</p>
+            <button id="needs-connection-retry" type="button" class="btn btn-sm btn-outline-dark">Try again</button>
+          </div>
         </section>
 
         <section id="view-secondary" class="app-view">
@@ -479,6 +501,23 @@
           <button type="submit" class="btn btn-success">Save Transaction</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Changes made offline that the server refused (src/controllers/SyncController.js) -->
+  <div class="modal fade" id="unsyncedModal" tabindex="-1" aria-labelledby="unsyncedModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="unsyncedModalTitle">Unsynced changes</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted">These changes were made on this device but the server did not accept them, so the herd shows the server's version. Nothing is removed from this list until you apply the change again or discard it.</p>
+          <div id="unsynced-list" class="list-group"></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+      </div>
     </div>
   </div>
 

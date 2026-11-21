@@ -13,10 +13,19 @@ import { TreatmentController } from "./TreatmentController.js";
 import { withdrawalBadge } from "../views/TreatmentView.js";
 import { BreedingController } from "./BreedingController.js";
 import { WeightController } from "./WeightController.js";
+import { isOnline, probe } from "../utils/connectivity.js";
+
+// Pages that work from the herd saved on this device (feature 14). Every other page reads or
+// writes records that are only on the server, and shows "needs a connection" while offline.
+const OFFLINE_VIEWS = new Set(["dashboard", "cattle", "settings"]);
+
+const QUEUED_NOTE = "Saved on this device. It will sync when the connection returns.";
 
 export class CattleController {
-  constructor() {
-    this.cattleService = new CattleService();
+  // `sync` is the SyncEngine (src/services/SyncEngine.js) that keeps the herd available offline.
+  constructor({ sync = null } = {}) {
+    this.sync = sync;
+    this.cattleService = new CattleService({ sync });
     this.dashboardView = new DashboardView();
     this.formView = new FormView();
     this.listView = new ListView();
@@ -24,6 +33,7 @@ export class CattleController {
     this.editingId = null;
     this.saving = false;
     this.currentView = "dashboard";
+    this.reapplying = null; // the unsynced change the open form is doing again (see reapplyUnsynced)
 
     // Record pages (calvings, and later treatments, breedings, weights). Each has its own
     // controller, built with this `host` object, and may add a tab to the cow details modal.
@@ -50,11 +60,11 @@ export class CattleController {
   // Listeners go on first so the page stays usable when the load fails.
   async init() {
     this.setupEventListeners();
-    this.setupOnlineStatus();
     await this.loadData();
   }
 
-  // Loads the herd from the server and redraws. On failure shows the error
+  // Loads the herd from the server and redraws; without a connection, from the copy saved on
+  // this device (the sync banner then says so). On failure shows the error
   // banner with a Retry button instead of an empty page. Returns true on success.
   async loadData() {
     try {
@@ -80,9 +90,25 @@ export class CattleController {
       });
     });
 
+    // "Try again" on the needs-a-connection page
+    document.getElementById("needs-connection-retry")?.addEventListener("click", async (e) => {
+      const button = e.currentTarget;
+      button.disabled = true;
+      const online = await probe();
+      button.disabled = false;
+      if (online) this.switchView(this.currentView);
+      else this.showNotification("Still no connection to the server.", "error");
+    });
+
+    // Closing the cattle form ends a re-apply that was not saved; its entry stays in the list.
+    document.getElementById("cattleModal")?.addEventListener("hidden.bs.modal", () => {
+      this.reapplying = null;
+    });
+
     // Open Add New Cow Modal
     document.getElementById("open-add-modal-btn")?.addEventListener("click", () => {
       this.editingId = null;
+      this.reapplying = null;
       this.formView.resetForm();
       this.formView.openModal(false);
     });
@@ -126,6 +152,14 @@ export class CattleController {
     document.querySelectorAll(".app-view").forEach((sec) => sec.classList.remove("active"));
     Object.values(this.recordPages).forEach((page) => page.hide());
 
+    if (!isOnline() && !OFFLINE_VIEWS.has(viewName)) {
+      // Nothing is fetched and none of the page's buttons are reachable until the connection returns.
+      const title = document.querySelector(`.nav-link[data-view="${viewName}"]`)?.textContent.trim() || "This page";
+      document.getElementById("needs-connection-title").textContent = title;
+      document.getElementById("view-needs-connection").classList.add("active");
+      return;
+    }
+
     if (this.recordPages[viewName]) {
       // A record page has its own section, #view-<name>, and loads its own data.
       document.getElementById(`view-${viewName}`).classList.add("active");
@@ -139,6 +173,34 @@ export class CattleController {
     } else {
       document.getElementById("view-secondary").classList.add("active");
       this.renderSecondaryView(viewName);
+      if (viewName === "settings") this.applyOfflineSettings();
+    }
+  }
+
+  // The app went online or offline (called by SyncController). Pages that need the server swap
+  // with the needs-a-connection page; the settings page locks or unlocks its password form.
+  connectivityChanged() {
+    if (!OFFLINE_VIEWS.has(this.currentView)) this.switchView(this.currentView);
+    else if (this.currentView === "settings") this.applyOfflineSettings();
+  }
+
+  // Changing the password needs the server: while offline the form is disabled and says why.
+  applyOfflineSettings() {
+    const form = document.getElementById("settings-password-form");
+    if (!form) return;
+    const offline = !isOnline();
+    form.querySelectorAll("input, button").forEach((el) => {
+      el.disabled = offline;
+    });
+    let note = document.getElementById("settings-password-offline");
+    if (offline && !note) {
+      note = document.createElement("div");
+      note.id = "settings-password-offline";
+      note.className = "alert alert-warning py-2";
+      note.textContent = "Changing your password needs a connection.";
+      form.before(note);
+    } else if (!offline) {
+      note?.remove();
     }
   }
 
@@ -198,13 +260,18 @@ export class CattleController {
         return;
       }
 
+      // A change being done again keeps the day it was first made as its weighing date.
+      const reapplying = this.reapplying;
+      const options = { weightDate: reapplying?.op.weightDate || null };
       if (this.editingId) {
-        await this.cattleService.updateCattle(this.editingId, formData);
-        this.showNotification("Cattle record updated", "success");
+        await this.cattleService.updateCattle(this.editingId, formData, options);
+        this.showNotification(this.cattleService.lastQueued ? `Cattle record updated. ${QUEUED_NOTE}` : "Cattle record updated", "success");
       } else {
-        await this.cattleService.addCattle(formData);
-        this.showNotification("New cow added to herd", "success");
+        await this.cattleService.addCattle(formData, options);
+        this.showNotification(this.cattleService.lastQueued ? `New cow added to herd. ${QUEUED_NOTE}` : "New cow added to herd", "success");
       }
+      // Saved again (sent or queued): the refused copy is no longer needed.
+      if (reapplying) await this.sync.discardUnsynced(reapplying.key).catch((err) => console.error(err));
 
       this.editingId = null;
       this.formView.resetForm();
@@ -222,6 +289,7 @@ export class CattleController {
     const cattle = this.cattleService.getCattleById(id);
     if (!cattle) return;
     this.editingId = id;
+    this.reapplying = null;
     this.formView.populateForm(cattle);
     this.formView.openModal(true);
   }
@@ -233,7 +301,9 @@ export class CattleController {
     const c = this.cattleService.getCattleById(id);
     if (!c) return;
     const statusInfo = formatHealthStatus(c.healthStatus);
-    const tabs = this.detailTabs.filter((tab) => !tab.appliesTo || tab.appliesTo(c));
+    // Record tabs read from the server: not offline, and not for an animal the server has not got yet.
+    const recordsAvailable = isOnline() && !c.pendingSync;
+    const tabs = recordsAvailable ? this.detailTabs.filter((tab) => !tab.appliesTo || tab.appliesTo(c)) : [];
     if (!tabs.some((tab) => tab.id === activeTab)) activeTab = "details";
     const tabButton = (tabId, label) => `
       <li class="nav-item" role="presentation">
@@ -263,6 +333,11 @@ export class CattleController {
         <li class="list-group-item"><strong>Status:</strong> <span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></li>
         <li class="list-group-item"><strong>Notes:</strong> ${escapeHtml(c.notes || "No notes recorded.")}</li>
       </ul>
+      ${recordsAvailable ? "" : `<p class="text-muted small mt-3 mb-0" id="cow-details-offline-note">${
+        isOnline()
+          ? "This animal has not synced yet. Its calving, breeding, weight, treatment and financial history will be available once it has."
+          : "Calving, breeding, weight, treatment and financial history need a connection."
+      }</p>`}
       </div>
       ${tabs.map((tab) => `<div class="${paneClass(tab.id)}" id="cow-tab-${escapeHtml(tab.id)}" role="tabpanel" aria-labelledby="cow-tab-btn-${escapeHtml(tab.id)}"></div>`).join("")}
       </div>
@@ -273,16 +348,17 @@ export class CattleController {
       if (tab.id === activeTab) draw();
       else bodyEl.querySelector(`[data-tab="${tab.id}"]`).addEventListener("show.bs.tab", draw, { once: true });
     }
-    this.financeController.appendCattleSection(c.id, document.getElementById("cow-tab-details"));
+    if (recordsAvailable) this.financeController.appendCattleSection(c.id, document.getElementById("cow-tab-details"));
     bootstrap.Modal.getOrCreateInstance(document.getElementById("viewCowModal")).show();
   }
 
+  // Resolves to true when the record was deleted (or the delete was queued).
   async handleDelete(id) {
-    if (!confirm("Delete this cattle record?")) return;
+    if (!confirm("Delete this cattle record?")) return false;
     try {
       await this.cattleService.deleteCattle(id);
     } catch (err) {
-      if (err.sessionExpired) return;
+      if (err.sessionExpired) return false;
       if (err.status === 404) {
         // Already gone, e.g. deleted in another tab: say so and resync the list.
         this.showNotification("That record was already deleted. The list has been refreshed.", "error");
@@ -290,10 +366,45 @@ export class CattleController {
       } else {
         this.showNotification(`Couldn't delete the record. ${err.message}`, "error");
       }
-      return;
+      return false;
     }
-    this.showNotification("Cattle record deleted", "success");
+    this.showNotification(this.cattleService.lastQueued ? `Cattle record deleted. ${QUEUED_NOTE}` : "Cattle record deleted", "success");
     this.refreshAllViews();
+    return true;
+  }
+
+  // Starts doing an unsynced change again (the "Unsynced changes" dialog, SyncController). The
+  // change goes through the normal add, edit or delete path as a new change, so it is checked
+  // against the herd as it is now. Its entry is removed only once that new change is saved.
+  async reapplyUnsynced(item) {
+    const { op } = item;
+    const existing = this.cattleService.getCattleById(op.cattleId);
+
+    if (op.type === "delete") {
+      if (!existing) {
+        await this.sync.discardUnsynced(item.key);
+        this.showNotification("That animal is already gone.", "success");
+        return true;
+      }
+      if (!(await this.handleDelete(op.cattleId))) return false;
+      await this.sync.discardUnsynced(item.key);
+      return true;
+    }
+
+    // An edit of an animal that still exists edits it; anything else (a new animal, or an edit
+    // of one deleted elsewhere) is added as a new animal with the values the user entered.
+    const editing = op.type === "edit" && existing;
+    this.editingId = editing ? existing.id : null;
+    this.formView.resetForm();
+    this.formView.populateForm({
+      ...(editing ? existing.toJSON() : {}),
+      ...op.data,
+      // The last calving date is not part of an edit; show what the records say.
+      lastCalvingDate: editing ? existing.lastCalvingDate : op.data.lastCalvingDate,
+    });
+    this.formView.openModal(Boolean(editing));
+    this.reapplying = item;
+    return true;
   }
 
   // Each part renders on its own, so one failing view does not blank the others.
@@ -315,24 +426,6 @@ export class CattleController {
       }
     }
     if (failed) this.showNotification("Part of the page couldn't be displayed. Try reloading.", "error");
-  }
-
-  setupOnlineStatus() {
-    const updateStatus = () => {
-      const indicator = document.getElementById("online-status");
-      const text = document.getElementById("status-text");
-      if (!indicator || !text) return;
-      if (navigator.onLine) {
-        indicator.className = "status-indicator online";
-        text.textContent = "Online";
-      } else {
-        indicator.className = "status-indicator offline";
-        text.textContent = "Offline";
-      }
-    };
-    window.addEventListener("online", updateStatus);
-    window.addEventListener("offline", updateStatus);
-    updateStatus();
   }
 
   showNotification(message, type = "success") {

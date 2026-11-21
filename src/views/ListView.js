@@ -30,7 +30,7 @@ export class ListView {
         return `
           <tr>
             <td><span class="badge badge-cow">${escapeHtml(c.tagNumber)}</span></td>
-            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")} ${withdrawalBadge(c)}</td>
+            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")} ${withdrawalBadge(c)}${c.pendingSync ? ' <span class="badge text-bg-warning badge-pending-sync" title="Changed on this device; not sent to the server yet">Not synced</span>' : ""}</td>
             <td>${genderHtml}</td>
             <td>${escapeHtml(c.birthDate || "—")}<br><small class="text-muted">${escapeHtml(calculateAge(c.birthDate))}</small></td>
             <td>${calvingInfo}</td>

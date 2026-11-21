@@ -582,6 +582,50 @@ describe('unsynced list and accounts', () => {
   });
 });
 
+describe('whose session it is', () => {
+  const queued = async (whoAmI) => {
+    const ctx = setup();
+    ctx.engine.whoAmI = whoAmI;
+    await ctx.engine.enqueue({ type: 'edit', cattleId: 'a', data: edit({ notes: 'mine' }) });
+    return ctx;
+  };
+
+  test('the same account: the outbox is sent', async () => {
+    const { engine } = await queued(async () => 1);
+    assert.deepEqual(await engine.replay(), { synced: 1, rejected: 0, stopped: null, remaining: 0 });
+  });
+
+  test('a different account is signed in: nothing is sent, nothing is dropped', async () => {
+    const { engine, server, store } = await queued(async () => 2);
+    assert.deepEqual(await engine.replay(), { synced: 0, rejected: 0, stopped: 'account', remaining: 1 });
+    assert.equal(server.calls.length, 0);
+    assert.equal((await store.read()).outbox.length, 1);
+  });
+
+  test('nobody is signed in: nothing is sent, nothing is dropped', async () => {
+    const { engine, server, store } = await queued(async () => null);
+    assert.deepEqual(await engine.replay(), { synced: 0, rejected: 0, stopped: 'signed-out', remaining: 1 });
+    assert.equal(server.calls.length, 0);
+    assert.equal((await store.read()).outbox.length, 1);
+  });
+
+  test('the check itself cannot reach the server: try again later', async () => {
+    const { engine, server } = await queued(async () => { throw fail(0, 'offline', null); });
+    assert.equal((await engine.replay()).stopped, 'unreachable');
+    engine.whoAmI = async () => { throw fail(500, 'boom'); };
+    assert.equal((await engine.replay()).stopped, 'error');
+    assert.equal(server.calls.length, 0);
+  });
+
+  test('with an empty outbox nobody is asked', async () => {
+    const ctx = setup();
+    let asked = 0;
+    ctx.engine.whoAmI = async () => { asked += 1; return 1; };
+    await ctx.engine.replay();
+    assert.equal(asked, 0);
+  });
+});
+
 describe('helpers', () => {
   test('sameAsRequested compares what an edit writes', () => {
     const current = { ...DAISY, notes: null, medications: '' };
