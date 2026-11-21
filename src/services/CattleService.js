@@ -2,20 +2,28 @@ import { Cattle } from "../models/Cattle.js";
 import { validateTagNumber, validateWeight } from "../utils/validators.js";
 import { parseLocalDate, todayISO } from "../utils/DateHelpers.js";
 
+// Errors thrown here carry `status` (HTTP status, or 0 when the server could not
+// be reached) and `sessionExpired` (true on 401, after the redirect to sign in has
+// started), so callers can skip their own message while the page navigates away.
 async function api(path, options = {}) {
-  const res = await fetch(path, {
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  let res;
+  try {
+    res = await fetch(path, {
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+  } catch {
+    throw Object.assign(new Error("Can't reach the server. Check your connection and try again."), { status: 0 });
+  }
   if (res.status === 401) {
     location.replace("/login.html");
-    throw new Error("Session expired");
+    throw Object.assign(new Error("Your session has expired. Please sign in again."), { status: 401, sessionExpired: true });
   }
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    const msg = (data && (data.error || (data.errors && data.errors[0] && data.errors[0].msg))) || "Request failed";
-    throw new Error(msg);
+    const msg = (data && (data.error || (data.errors && data.errors[0] && data.errors[0].msg))) || `Request failed (${res.status})`;
+    throw Object.assign(new Error(msg), { status: res.status });
   }
   return data;
 }
