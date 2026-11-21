@@ -12,6 +12,7 @@ pool.on('error', (err) => console.error('PostgreSQL idle client error:', err.mes
 async function initSchema() {
   await coreSchema();
   await calvingSchema();
+  await breedingSchema();
   await initTransactionsSchema();
 }
 
@@ -79,6 +80,47 @@ async function calvingSchema() {
   `);
 }
 // --- end calving records --------------------------------------------------------------------
+
+// --- Breeding records (feature 09) ----------------------------------------------------------
+// Breedings and pregnancy checks are two tables: a cow may have several checks for one breeding
+// (early scan, then a confirmation), or a check with no breeding on record (a bought-in cow).
+// sire_cattle_id links a bull of the same herd (checked by routes/breedings.js); deleting the bull
+// keeps the breeding and its `sire` text. Deleting a breeding keeps its checks and clears the link.
+// cattle.expected_calving_date and health_status are updated by the routes (see lib/breeding.js).
+async function breedingSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS breeding_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      cattle_id UUID NOT NULL REFERENCES cattle(id) ON DELETE CASCADE,
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      breeding_date DATE NOT NULL,
+      method TEXT CHECK (method IN ('ai','natural')),
+      sire TEXT,
+      sire_cattle_id UUID REFERENCES cattle(id) ON DELETE SET NULL,
+      technician TEXT,
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS breeding_events_cattle_idx ON breeding_events (cattle_id, breeding_date DESC);
+    CREATE INDEX IF NOT EXISTS breeding_events_owner_idx ON breeding_events (owner_id, breeding_date DESC);
+    CREATE INDEX IF NOT EXISTS breeding_events_sire_idx ON breeding_events (sire_cattle_id);
+    CREATE TABLE IF NOT EXISTS pregnancy_checks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      cattle_id UUID NOT NULL REFERENCES cattle(id) ON DELETE CASCADE,
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      check_date DATE NOT NULL,
+      result TEXT NOT NULL CHECK (result IN ('pregnant','open','unsure')),
+      method TEXT CHECK (method IN ('palpation','ultrasound','blood_test','other')),
+      breeding_id UUID REFERENCES breeding_events(id) ON DELETE SET NULL,
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS pregnancy_checks_cattle_idx ON pregnancy_checks (cattle_id, check_date DESC);
+    CREATE INDEX IF NOT EXISTS pregnancy_checks_owner_idx ON pregnancy_checks (owner_id, check_date DESC);
+    CREATE INDEX IF NOT EXISTS pregnancy_checks_breeding_idx ON pregnancy_checks (breeding_id);
+  `);
+}
+// --- end breeding records -------------------------------------------------------------------
 
 // --- Financial records (feature 11) ---------------------------------------
 // Income and expenses. `amount` is always positive; `kind` decides the sign.

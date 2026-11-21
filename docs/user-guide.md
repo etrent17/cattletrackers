@@ -40,7 +40,7 @@ On Cattle Records, type in the search box to match cow number, name/breed, medic
 | Birth Date | Date; age is calculated from it |
 | Weight (lbs) | Greater than 0, at most 5000 |
 | Last Calving Date | Date. For a new cow it is saved as her first calving record. After that it is read-only and always shows her most recent calving record |
-| Expected Calving Date | Date |
+| Expected Calving Date | Date. Filled in when a breeding is recorded (see Breeding records); you can still change it |
 | Current Medications | Up to 500 characters |
 | Health Status | Healthy, Under Treatment, In Quarantine, or Pregnant |
 | Additional Notes | Up to 2000 characters |
@@ -55,6 +55,24 @@ Open **Calving Records** in the sidebar, or the **Calving history** tab in a cow
 - **Edit or delete** a calving with the buttons on its row. Deleting a calving does not delete the calf's own record.
 
 The cow's Last Calving Date always shows her most recent calving. Deleting a cow deletes her calving records.
+
+## Breeding records
+
+Open **Breeding History** in the sidebar, or the **Breeding** tab in a cow's details (the eye button). Bulls have no Breeding tab.
+
+- **Needs Pregnancy Check** lists cows bred more than 35 days ago with no pregnancy check since that breeding, oldest first. A cow drops off the list once she is checked, rebred, or calves. Click Record check to check her; her breeding is already chosen.
+- **Record a breeding**: click Record Breeding, choose the cow and the date. Method (AI or natural), sire, technician and notes are optional. For the sire, pick one of your bulls (animals recorded as male) or leave "Not a bull from the herd" and type a name or straw code, for example for an AI sire. If a bull you picked is later deleted, the breeding still names him.
+- **Expected calving date**: the form shows the breeding date + 283 days (the average gestation for cattle; a fixed figure, not a setting). When the breeding is the cow's newest one since her last calving, this date is saved as her Expected Calving Date, replacing what was there. Editing or deleting that breeding moves the date with it, unless you have typed a different date on the cattle form in the meantime: a typed date is kept.
+- **Record a pregnancy check**: click Record Pregnancy Check (or Record check beside a cow), choose the cow, the date and the result: Pregnant, Open (not pregnant) or Unsure. Method and notes are optional, and the check can be linked to one of her breedings (her newest breeding on or before the check date is chosen for you).
+- **What a check changes**, when it is the cow's latest check since her current breeding:
+  - **Pregnant** changes a Healthy status to Pregnant, and fills in the expected calving date from her breeding if it is empty. Under Treatment and In Quarantine are left as they are.
+  - **Open** clears her expected calving date and changes Pregnant back to Healthy.
+  - **Unsure** changes nothing.
+- Deleting a check does not change her health status. If the deleted check was Open, her expected calving date comes back from her breeding.
+- When you record her calving with "Clear her expected calving date" ticked, the date and Pregnant status are cleared and her older breedings no longer set the date.
+- **Edit or delete** breedings and checks with the buttons on their rows. Deleting a breeding keeps its checks. The search box narrows both tables by cow, sire, technician or notes.
+
+Deleting a cow deletes her breedings and pregnancy checks.
 
 ## Settings and password
 
@@ -95,4 +113,4 @@ All amounts are added exactly, to the cent.
 
 ## Demo accounts
 
-A demo session lasts four hours, starts with eight sample animals and twelve sample transactions from the past five months, and is limited to 25 animals and 200 transactions. Demo data is deleted automatically.
+A demo session lasts four hours, starts with eight sample animals, their calving, breeding and pregnancy-check history, and twelve sample transactions from the past five months, and is limited to 25 animals and 200 transactions. Demo data is deleted automatically.

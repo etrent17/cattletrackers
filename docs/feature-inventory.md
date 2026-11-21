@@ -37,6 +37,7 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 | Recent cattle table | `DashboardView.renderRecentTable` | Defective | ID mismatch |
 | Upcoming events and alerts | `DashboardView.renderEventsAndAlerts` | Defective | ID mismatch; no alerts container exists |
 | Calving, Medical, Breeding views | `renderFilteredSubView` | Partial | Filtered copies of the cattle list, not separate event histories |
+| Breeding records (Breeding History page) | `routes/breedings.js`, `routes/pregnancy-checks.js`, `BreedingController` | Implemented | Replaces the Breeding filtered view (feature 09): breedings and pregnancy checks with add/edit/delete, needs-check list, sire picker of the herd's bulls, Breeding tab in the cow details; recording a breeding fills the expected calving date, a check sets or clears Pregnant. Tested by `test/api/breedings.test.js`, `test/api/pregnancy-checks.test.js`, `e2e/breeding.e2e.js` |
 | One-view-at-a-time navigation | `public/styles.css` | Implemented | Added in `29162f2` |
 
 ## Reports, settings, finance
