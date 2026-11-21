@@ -4,7 +4,7 @@ All bodies are JSON. Errors have the form `{ "error": "message" }`. Validation f
 
 ## Health
 
-`GET /api/health` returns `{ "status": "healthy" }`. Does not check the database.
+`GET /api/health` runs `SELECT 1` against the database. It returns 200 `{ "status": "healthy", "database": "up" }`, or 503 `{ "status": "unhealthy", "database": "down" }` when the database is unreachable or does not answer within 3 seconds. No authentication or session is needed.
 
 ## Auth (`/api/auth`)
 
