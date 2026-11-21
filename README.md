@@ -32,6 +32,7 @@ Open the printed URL and create the first admin account. See [deployment](docs/d
 
 ## Documentation
 
+- [Roadmap and progress sheets](docs/roadmap.md)
 - [Feature inventory](docs/feature-inventory.md)
 - [User guide](docs/user-guide.md)
 - [Reports and records](docs/reports-and-records.md)
