@@ -55,5 +55,15 @@ export class FormView {
     if (saveBtn) {
       saveBtn.textContent = isEditing ? "Update Record" : "Save Record";
     }
+    // The last calving date follows the calving records: it can be typed for a new animal
+    // (it becomes her first calving record) and is read-only afterwards.
+    const lastCalving = document.getElementById("f-last-calving");
+    const lastCalvingHelp = document.getElementById("f-last-calving-help");
+    if (lastCalving) lastCalving.disabled = isEditing;
+    if (lastCalvingHelp) {
+      lastCalvingHelp.textContent = isEditing
+        ? "Set by her calving records. Record or edit a calving to change it."
+        : "Saved as her first calving record.";
+    }
   }
 }
