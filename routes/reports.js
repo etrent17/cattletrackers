@@ -112,10 +112,12 @@ router.get('/performance', rules, async (req, res) => {
 
     // One row per calendar month from the start of the period (or the first animal, when there is
     // no `from`) to its end (never later than today). `size` is the number of animals whose record
-    // was created on or before the last day counted in that month; created_at is read as a UTC date.
+    // was created on or before the last day counted in that month. created_at is read as a UTC date,
+    // but never later than the caller's today: an animal added in the evening west of UTC is on
+    // record today, not tomorrow.
     const herdByMonth = await run(
       `WITH j AS (
-         SELECT (created_at AT TIME ZONE 'UTC')::date AS d FROM cattle WHERE owner_id = $1
+         SELECT LEAST((created_at AT TIME ZONE 'UTC')::date, $4::date) AS d FROM cattle WHERE owner_id = $1
        ), r AS (
          SELECT COALESCE($2::date, (SELECT min(d) FROM j)) AS s, ${PERIOD_END} AS e
        ), m AS (

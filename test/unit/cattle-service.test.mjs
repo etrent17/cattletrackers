@@ -49,7 +49,6 @@ describe('getStatistics', () => {
       total: 0,
       healthy: 0,
       calvingThisMonth: 0,
-      scheduledTreatments: 0,
     });
   });
 
@@ -57,7 +56,6 @@ describe('getStatistics', () => {
     const stats = serviceWith().getStatistics();
     assert.equal(stats.total, 6);
     assert.equal(stats.healthy, 3);
-    assert.equal(stats.scheduledTreatments, 1);
   });
 
   test('counts expected calvings in the current month and year only', () => {

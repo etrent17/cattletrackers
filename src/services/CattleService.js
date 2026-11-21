@@ -126,8 +126,6 @@ export class CattleService {
       total: this.cattle.length,
       healthy: this.cattle.filter((cow) => cow.healthStatus === "healthy").length,
       calvingThisMonth,
-      // Current treatment status is a proxy, not a treatment schedule.
-      scheduledTreatments: this.cattle.filter((cow) => cow.healthStatus === "under_treatment").length,
     };
   }
 }

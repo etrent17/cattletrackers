@@ -167,6 +167,17 @@ describe('performance report: figures for the known herd', () => {
     assert.deepEqual(herd.byMonth, [{ month: '2026-03', asOf: '2026-03-20', added: 1, size: 4 }]);
   });
 
+  test("an animal added after midnight UTC still counts on the caller's today", async () => {
+    const client = await signedIn('a@example.com');
+    await pool.query(
+      "INSERT INTO cattle (owner_id, tag_number, created_at) VALUES ($1, 'LATE-1', '2026-07-01T02:00:00Z')",
+      [client.user.id]
+    );
+    // 02:00 UTC on 1 July is still 30 June for a user west of UTC.
+    const { herd } = await performance(client, 'from=2026-06-01&today=2026-06-30');
+    assert.deepEqual(herd.byMonth, [{ month: '2026-06', asOf: '2026-06-30', added: 1, size: 1 }]);
+  });
+
   test('calvings, outcomes, ease, birth weight and calving rate', async () => {
     const client = await signedIn('a@example.com');
     await seed(client.user.id);
