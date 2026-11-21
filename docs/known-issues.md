@@ -10,12 +10,6 @@ Performance, Health, and Financial reports show identical herd statistics.
 ### 5. No financial functionality
 No table, API route, or form exists.
 
-### 6. Settings page is inaccurate
-It says offline storage uses `localStorage` and offers a sample-herd reset that only clears a key the app does not use.
-
-### 7. User Management screen is a placeholder
-The API exists; there is no interface.
-
 
 ## Resolved
 
@@ -32,6 +26,7 @@ The API exists; there is no interface.
 - **9. Delete had no error handling.** A failed delete shows an error toast; deleting a record already deleted in another tab says so and refreshes the list. Fixed on `feature/error-handling`, verified in a browser.
 - (13) No automated tests: `npm test` now runs unit and API tests against PostgreSQL, `npm run test:e2e` runs a browser smoke test, and GitHub Actions runs both on every push and pull request. Added on `feature/automated-tests`; the workflow passed on GitHub for the branch push (run 44942939463).
 - **6. Settings page was inaccurate.** The `localStorage` text and the sample-herd reset button are gone; System Settings now shows the signed-in account (email, role, demo status), a change-password form backed by `POST /api/auth/password`, and an accurate description of offline behaviour. The unused `StorageService.js` and `ApiClient.js` were deleted. Fixed on `feature/settings-cleanup`, verified in a browser (`e2e/settings.e2e.js`).
+- **7. User Management screen was a placeholder.** Admins can now list, add, and delete users and change roles from the screen; the nav item is hidden for non-admins. The API gained `PATCH /api/users/:id`, reads the role from the database on each admin request (demotion takes effect immediately), ends a deleted user's sessions, and never removes the last admin. Fixed on `feature/user-management-ui`, verified in a browser (`e2e/users.e2e.js`).
 
 ## Note on login graphics
 

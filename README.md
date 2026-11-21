@@ -46,7 +46,7 @@ npm test
 | `npm test` | Unit and API tests: every `test/**/*.test.js` or `.test.mjs` file | PostgreSQL |
 | `npm run test:unit` | Front-end unit tests only (`test/unit/`) | nothing |
 | `npm run test:api` | API tests only (`test/api/`) | PostgreSQL |
-| `npm run test:e2e` | Browser smoke test (`e2e/`): set up, sign in, add a cow, see it on the dashboard and list, delete it | PostgreSQL, Chromium |
+| `npm run test:e2e` | Browser tests (`e2e/`, one file at a time): the smoke test (set up, sign in, add a cow, see it on the dashboard and list, delete it) and User Management (list, add, change role, delete, hidden for regular users) | PostgreSQL, Chromium |
 
 Before the first `npm run test:e2e`, install the browser once with `npx playwright install chromium` (add `--with-deps` on a fresh Linux machine).
 

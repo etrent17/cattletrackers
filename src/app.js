@@ -1,4 +1,5 @@
 import { CattleController } from "./controllers/CattleController.js";
+import { applyUserManagementAccess } from "./controllers/UsersController.js";
 import { hideErrorBanner, showErrorBanner, showToast } from "./utils/feedback.js";
 
 let controller = null;
@@ -22,6 +23,7 @@ async function boot() {
   if (!status.authenticated) return window.location.replace("/login.html");
   hideErrorBanner();
   window.currentUser = status.user;
+  applyUserManagementAccess(); // admins only
 
   if (controller) return;
   try {

@@ -47,9 +47,12 @@ A duplicate cow number returns 409 `Duplicate cow number`. `:id` must be a UUID.
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/` | Lists non-demo users |
-| POST | `/` | `email`, `password`, optional `role`; 201 |
-| DELETE | `/:id` | 400 if deleting yourself; 404 if missing |
+| GET | `/` | Lists non-demo users: `id`, `email`, `role`, `created_at`, `cattle_count` |
+| POST | `/` | `email`, `password` (10 to 128 characters), optional `role` (`admin` or `user`, default `user`); 201 with the new user; 409 if the email is taken |
+| PATCH | `/:id` | `role` (`admin` or `user`); 200 with the updated user. 404 for an unknown or demo user; 409 if it would demote the last admin |
+| DELETE | `/:id` | Deletes the user, their cattle (cascade), and their sessions. 400 if deleting yourself; 404 if missing; 409 if it is the last admin |
+
+The role is read from the database on every request to these routes, so a demoted admin gets 403 on their next request and a session whose user was deleted gets 401 `Session expired`. A bad `role` returns 400 `Role must be admin or user`. Role changes and deletions are serialised, so two admins acting on each other at the same time still leave one admin.
 
 ## Not available
 

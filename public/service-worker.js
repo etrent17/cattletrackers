@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cattle-trackers-v10';
+const CACHE_NAME = 'cattle-trackers-v11';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -8,6 +8,7 @@ const urlsToCache = [
   '/src/auth.js',
   '/src/app.js',
   '/src/controllers/CattleController.js',
+  '/src/controllers/UsersController.js',
   '/src/models/Cattle.js',
   '/src/services/AccountService.js',
   '/src/services/CattleService.js',
@@ -19,6 +20,7 @@ const urlsToCache = [
   '/src/views/FormView.js',
   '/src/views/ListView.js',
   '/src/views/SettingsView.js',
+  '/src/views/UsersView.js',
 ];
 
 self.addEventListener('install', (event) => {
