@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cattle-trackers-v7';
+const CACHE_NAME = 'cattle-trackers-v8';
 const urlsToCache = [
   '/',
   '/index.html',
