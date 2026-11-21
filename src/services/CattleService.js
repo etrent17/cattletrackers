@@ -5,7 +5,7 @@ import { parseLocalDate, todayISO } from "../utils/DateHelpers.js";
 // Errors thrown here carry `status` (HTTP status, or 0 when the server could not
 // be reached) and `sessionExpired` (true on 401, after the redirect to sign in has
 // started), so callers can skip their own message while the page navigates away.
-async function api(path, options = {}) {
+export async function api(path, options = {}) {
   let res;
   try {
     res = await fetch(path, {
