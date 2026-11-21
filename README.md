@@ -1,6 +1,6 @@
-# CattleTrack
+# Cattle Trackers
 
-CattleTrack is a livestock management web application: an Express server, a PostgreSQL database, a REST API, and a Bootstrap-based browser interface written as ES modules.
+Cattle Trackers is a livestock management web application: an Express server, a PostgreSQL database, a REST API, and a Bootstrap-based browser interface written as ES modules.
 
 > **Status: early prototype.** These docs describe the source at commit `7fb8152`. Nothing has been verified by browser testing yet. Read [known issues](docs/known-issues.md) before relying on any workflow.
 

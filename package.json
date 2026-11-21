@@ -1,7 +1,7 @@
 {
   "name": "cattletrackers",
   "version": "1.0.0",
-  "description": "CattleTrack livestock management: application server, PostgreSQL database, REST API",
+  "description": "Cattle Trackers livestock management: application server, PostgreSQL database, REST API",
   "homepage": "https://github.com/etrent17/cattletrackers#readme",
   "bugs": {
     "url": "https://github.com/etrent17/cattletrackers/issues"

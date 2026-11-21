@@ -47,7 +47,7 @@ function enterSetupMode() {
   if (els.password) els.password.autocomplete = 'new-password';
   if (els.submit) els.submit.textContent = 'Create account';
   if (els.subtitle) els.subtitle.textContent = 'Create the admin account to get started';
-  document.title = 'CattleTrack - Create your account';
+  document.title = 'Cattle Trackers - Create your account';
 }
 
 els.form?.addEventListener('submit', async (e) => {
