@@ -1,5 +1,6 @@
 import { Cattle } from "../models/Cattle.js";
 import { validateTagNumber, validateWeight } from "../utils/validators.js";
+import { parseLocalDate, todayISO } from "../utils/DateHelpers.js";
 
 async function api(path, options = {}) {
   const res = await fetch(path, {
@@ -94,16 +95,20 @@ export class CattleService {
     );
   }
 
+  // Expected calvings due today or later, soonest first.
+  getUpcomingCalvings(limit = 5) {
+    const today = todayISO();
+    return this.cattle
+      .filter((cow) => cow.gender !== "male" && parseLocalDate(cow.expectedCalvingDate) && cow.expectedCalvingDate >= today)
+      .sort((a, b) => a.expectedCalvingDate.localeCompare(b.expectedCalvingDate))
+      .slice(0, limit);
+  }
+
   getStatistics() {
     const now = new Date();
     const calvingThisMonth = this.cattle.filter((cow) => {
-      if (!cow.expectedCalvingDate) return false;
-      const due = new Date(cow.expectedCalvingDate);
-      return (
-        !Number.isNaN(due.getTime()) &&
-        due.getUTCFullYear() === now.getFullYear() &&
-        due.getUTCMonth() === now.getMonth()
-      );
+      const due = parseLocalDate(cow.expectedCalvingDate);
+      return due !== null && due.getFullYear() === now.getFullYear() && due.getMonth() === now.getMonth();
     }).length;
 
     return {
