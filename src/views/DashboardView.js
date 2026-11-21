@@ -2,14 +2,18 @@ import { formatHealthStatus } from "../utils/DateHelpers.js";
 
 export class DashboardView {
   renderStats(stats) {
-    document.getElementById("stat-total-cattle").textContent = stats.total;
-    document.getElementById("stat-calving-month").textContent = stats.calvingThisMonth;
-    document.getElementById("stat-scheduled-treatments").textContent = stats.scheduledTreatments;
-    document.getElementById("stat-healthy-animals").textContent = stats.healthy;
+    const set = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+    set("stat-total", stats.total);
+    set("stat-calving", stats.calvingThisMonth);
+    set("stat-treatments", stats.scheduledTreatments);
+    set("stat-healthy", stats.healthy);
   }
 
   renderRecentTable(cattleList) {
-    const tbody = document.getElementById("recent-cattle-tbody");
+    const tbody = document.getElementById("recent-body");
     if (!tbody) return;
 
     if (cattleList.length === 0) {
@@ -43,12 +47,11 @@ export class DashboardView {
       .join("");
   }
 
-  renderEventsAndAlerts(allCattle) {
-    const eventsEl = document.getElementById("upcoming-events-list");
-    const alertsEl = document.getElementById("alerts-reminders-list");
-    if (!eventsEl || !alertsEl) return;
+  // `upcomingCalvings` is already filtered to future dates and sorted (CattleService.getUpcomingCalvings).
+  renderUpcomingEvents(upcomingCalvings) {
+    const eventsEl = document.getElementById("events-list");
+    if (!eventsEl) return;
 
-    const upcomingCalvings = allCattle.filter((c) => c.expectedCalvingDate).slice(0, 3);
     eventsEl.innerHTML =
       upcomingCalvings.length > 0
         ? upcomingCalvings
@@ -58,31 +61,12 @@ export class DashboardView {
                 <div>
                   <i class="fas fa-baby text-warning me-2"></i>
                   <strong>Calving Due</strong><br>
-                  <small class="text-muted">${c.nameBreed} (${c.tagNumber})</small>
+                  <small class="text-muted">${c.nameBreed || "Unnamed"} (${c.tagNumber})</small>
                 </div>
                 <span class="badge bg-warning text-dark rounded-pill">${c.expectedCalvingDate}</span>
               </li>`
             )
             .join("")
-        : `<li class="list-group-item text-muted">No upcoming scheduled events.</li>`;
-
-    const alerts = allCattle.filter(
-      (c) => c.healthStatus !== "healthy" || !c.medications
-    ).slice(0, 3);
-
-    alertsEl.innerHTML =
-      alerts.length > 0
-        ? alerts
-            .map((c) => {
-              const isMedical = c.healthStatus === "under_treatment" || c.healthStatus === "quarantine";
-              return `
-                <li class="list-group-item">
-                  <i class="fas ${isMedical ? "fa-exclamation-circle text-danger" : "fa-info-circle text-info"} me-2"></i>
-                  <strong>${isMedical ? "Medical Attention Required" : "Record Check"}</strong><br>
-                  <small class="text-muted">${c.nameBreed} (${c.tagNumber}) — ${c.notes || "Review status & medication log"}</small>
-                </li>`;
-            })
-            .join("")
-        : `<li class="list-group-item text-muted">All herd records are up to date.</li>`;
+        : `<li class="list-group-item text-muted">No upcoming calvings.</li>`;
   }
 }
