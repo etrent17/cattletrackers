@@ -4,6 +4,7 @@ import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
 import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
 import { hideErrorBanner, showErrorBanner, showToast } from "../utils/feedback.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 
 export class CattleController {
   constructor() {
@@ -204,16 +205,16 @@ export class CattleController {
     document.getElementById("viewCowModalTitle").textContent = `${c.nameBreed} (${c.tagNumber})`;
     document.getElementById("viewCowModalBody").innerHTML = `
       <ul class="list-group list-group-flush">
-        <li class="list-group-item"><strong>Cow ID:</strong> ${c.tagNumber}</li>
-        <li class="list-group-item"><strong>Name / Breed:</strong> ${c.nameBreed || "—"}</li>
+        <li class="list-group-item"><strong>Cow ID:</strong> ${escapeHtml(c.tagNumber)}</li>
+        <li class="list-group-item"><strong>Name / Breed:</strong> ${escapeHtml(c.nameBreed || "—")}</li>
         <li class="list-group-item"><strong>Gender:</strong> ${formatGender(c.gender)}</li>
-        <li class="list-group-item"><strong>Birth Date / Age:</strong> ${c.birthDate || "—"} (${calculateAge(c.birthDate)})</li>
-        <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${c.weight} lbs` : "—"}</li>
-        <li class="list-group-item"><strong>Last Calving:</strong> ${c.lastCalvingDate || "N/A"}</li>
-        <li class="list-group-item"><strong>Expected Calving:</strong> ${c.expectedCalvingDate || "N/A"}</li>
-        <li class="list-group-item"><strong>Medications:</strong> ${c.medications || "None"}</li>
-        <li class="list-group-item"><strong>Status:</strong> <span class="badge ${statusInfo.badgeClass}">${statusInfo.label}</span></li>
-        <li class="list-group-item"><strong>Notes:</strong> ${c.notes || "No notes recorded."}</li>
+        <li class="list-group-item"><strong>Birth Date / Age:</strong> ${escapeHtml(c.birthDate || "—")} (${escapeHtml(calculateAge(c.birthDate))})</li>
+        <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</li>
+        <li class="list-group-item"><strong>Last Calving:</strong> ${escapeHtml(c.lastCalvingDate || "N/A")}</li>
+        <li class="list-group-item"><strong>Expected Calving:</strong> ${escapeHtml(c.expectedCalvingDate || "N/A")}</li>
+        <li class="list-group-item"><strong>Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
+        <li class="list-group-item"><strong>Status:</strong> <span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></li>
+        <li class="list-group-item"><strong>Notes:</strong> ${escapeHtml(c.notes || "No notes recorded.")}</li>
       </ul>
     `;
     new bootstrap.Modal(document.getElementById("viewCowModal")).show();
