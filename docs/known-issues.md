@@ -32,12 +32,6 @@ The API exists; there is no interface.
 ### 9. Delete has no error handling
 A failed delete request raises an unhandled error.
 
-### 10. Docker setup omits some settings
-The generated compose file does not pass `DEMO_MODE` or `COOKIE_SECURE`, and `install.sh` overwrites generated files on each run.
-
-### 11. Health check ignores the database
-`/api/health` reports healthy even if PostgreSQL is down.
-
 ### 12. Calving-month statistic mixes date handling
 It compares a UTC month of the expected date with the local month of today, which can be off near month boundaries.
 
@@ -49,6 +43,8 @@ It compares a UTC month of the expected date with the local month of today, whic
 - `getStatistics()` was missing from `CattleService`. Added in `e8d97e1`.
 - Inactive views stayed visible, stacking reports under tables. Fixed in `29162f2`.
 - The add/edit form used IDs that did not exist. Fixed in `7fb8152` (untested).
+- (10) Docker setup omitted some settings: compose did not pass `DEMO_MODE` or `COOKIE_SECURE`, and `install.sh` overwrote the Docker files on each run. The Docker files are now committed, `install.sh` only creates `.env` and runs Compose, and Compose passes `DEMO_MODE`, `COOKIE_SECURE`, and `HSTS`. Fixed on `feature/deploy-hardening` (compose validated with `docker compose config`; not run under a Docker daemon).
+- (11) Health check ignored the database: `/api/health` now runs `SELECT 1` and returns 503 when PostgreSQL is unreachable. Fixed on `feature/deploy-hardening`.
 
 ## Note on login graphics
 

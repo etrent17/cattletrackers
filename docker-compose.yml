@@ -1,0 +1,49 @@
+# Cattle Trackers stack: the app plus PostgreSQL 16.
+# ${VARS} are read from .env (created once by install.sh). This file is part of
+# the repository; install.sh never rewrites it, so local edits are kept.
+services:
+  app:
+    build: .
+    ports:
+      # Set APP_BIND=127.0.0.1 when a reverse proxy on the same host serves HTTPS,
+      # so the app is not reachable over plain HTTP from other machines.
+      - "${APP_BIND:-0.0.0.0}:${APP_PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      SESSION_SECRET: ${SESSION_SECRET}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      HSTS: ${HSTS:-false}
+      HSTS_MAX_AGE: ${HSTS_MAX_AGE:-31536000}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # /api/health returns 503 when the database is unreachable; wget exits non-zero on that
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  pgdata:

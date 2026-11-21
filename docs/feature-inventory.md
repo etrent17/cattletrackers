@@ -55,7 +55,8 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 | Online/offline indicator | `setupOnlineStatus` | Implemented | |
 | Static asset caching | `public/service-worker.js` | Implemented | API requests are never cached |
 | Offline cattle editing | none | Missing | |
-| Health endpoint | `GET /api/health` | Implemented | Does not check the database |
-| Security headers and CSP | `server.js` (helmet) | Implemented | HSTS disabled |
-| Docker installer | `install.sh` | Implemented | |
+| Health endpoint | `GET /api/health` | Implemented | Returns 503 when the database is down |
+| Security headers and CSP | `server.js` (helmet) | Implemented | HSTS off unless `HSTS=true` |
+| Docker installer | `install.sh`, `docker-compose.yml` | Implemented | |
+| Database backup and restore | `scripts/backup.sh`, `scripts/restore.sh` | Implemented | See deployment docs |
 | Automated tests | `package.json` | Missing | `npm test` is a placeholder |
