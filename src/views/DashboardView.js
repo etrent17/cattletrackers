@@ -1,15 +1,20 @@
 import { formatHealthStatus } from "../utils/DateHelpers.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 
 export class DashboardView {
   renderStats(stats) {
-    document.getElementById("stat-total-cattle").textContent = stats.total;
-    document.getElementById("stat-calving-month").textContent = stats.calvingThisMonth;
-    document.getElementById("stat-scheduled-treatments").textContent = stats.scheduledTreatments;
-    document.getElementById("stat-healthy-animals").textContent = stats.healthy;
+    const set = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+    set("stat-total", stats.total);
+    set("stat-calving", stats.calvingThisMonth);
+    set("stat-treatments", stats.scheduledTreatments);
+    set("stat-healthy", stats.healthy);
   }
 
   renderRecentTable(cattleList) {
-    const tbody = document.getElementById("recent-cattle-tbody");
+    const tbody = document.getElementById("recent-body");
     if (!tbody) return;
 
     if (cattleList.length === 0) {
@@ -27,15 +32,15 @@ export class DashboardView {
 
         return `
           <tr>
-            <td><span class="badge badge-cow">${c.tagNumber}</span></td>
-            <td class="fw-semibold">${c.nameBreed || "Unnamed"}</td>
+            <td><span class="badge badge-cow">${escapeHtml(c.tagNumber)}</span></td>
+            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")}</td>
             <td>${genderHtml}</td>
-            <td>${c.gender === "male" ? "N/A" : c.lastCalvingDate || "—"}</td>
-            <td>${c.medications || "None"}</td>
-            <td><span class="badge ${statusInfo.badgeClass}">${statusInfo.label}</span></td>
+            <td>${c.gender === "male" ? "N/A" : escapeHtml(c.lastCalvingDate || "—")}</td>
+            <td>${escapeHtml(c.medications || "None")}</td>
+            <td><span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></td>
             <td>
-              <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${c.id}" title="Edit"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-sm btn-outline-info btn-view" data-id="${c.id}" title="View"><i class="fas fa-eye"></i></button>
+              <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${escapeHtml(c.id)}" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-outline-info btn-view" data-id="${escapeHtml(c.id)}" title="View"><i class="fas fa-eye"></i></button>
             </td>
           </tr>
         `;
@@ -43,12 +48,11 @@ export class DashboardView {
       .join("");
   }
 
-  renderEventsAndAlerts(allCattle) {
-    const eventsEl = document.getElementById("upcoming-events-list");
-    const alertsEl = document.getElementById("alerts-reminders-list");
-    if (!eventsEl || !alertsEl) return;
+  // `upcomingCalvings` is already filtered to future dates and sorted (CattleService.getUpcomingCalvings).
+  renderUpcomingEvents(upcomingCalvings) {
+    const eventsEl = document.getElementById("events-list");
+    if (!eventsEl) return;
 
-    const upcomingCalvings = allCattle.filter((c) => c.expectedCalvingDate).slice(0, 3);
     eventsEl.innerHTML =
       upcomingCalvings.length > 0
         ? upcomingCalvings
@@ -58,31 +62,12 @@ export class DashboardView {
                 <div>
                   <i class="fas fa-baby text-warning me-2"></i>
                   <strong>Calving Due</strong><br>
-                  <small class="text-muted">${c.nameBreed} (${c.tagNumber})</small>
+                  <small class="text-muted">${escapeHtml(c.nameBreed || "Unnamed")} (${escapeHtml(c.tagNumber)})</small>
                 </div>
-                <span class="badge bg-warning text-dark rounded-pill">${c.expectedCalvingDate}</span>
+                <span class="badge bg-warning text-dark rounded-pill">${escapeHtml(c.expectedCalvingDate)}</span>
               </li>`
             )
             .join("")
-        : `<li class="list-group-item text-muted">No upcoming scheduled events.</li>`;
-
-    const alerts = allCattle.filter(
-      (c) => c.healthStatus !== "healthy" || !c.medications
-    ).slice(0, 3);
-
-    alertsEl.innerHTML =
-      alerts.length > 0
-        ? alerts
-            .map((c) => {
-              const isMedical = c.healthStatus === "under_treatment" || c.healthStatus === "quarantine";
-              return `
-                <li class="list-group-item">
-                  <i class="fas ${isMedical ? "fa-exclamation-circle text-danger" : "fa-info-circle text-info"} me-2"></i>
-                  <strong>${isMedical ? "Medical Attention Required" : "Record Check"}</strong><br>
-                  <small class="text-muted">${c.nameBreed} (${c.tagNumber}) — ${c.notes || "Review status & medication log"}</small>
-                </li>`;
-            })
-            .join("")
-        : `<li class="list-group-item text-muted">All herd records are up to date.</li>`;
+        : `<li class="list-group-item text-muted">No upcoming calvings.</li>`;
   }
 }

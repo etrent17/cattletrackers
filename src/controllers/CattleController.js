@@ -3,6 +3,7 @@ import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
 import { calculateAge, formatHealthStatus } from "../utils/DateHelpers.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 
 export class CattleController {
   constructor() {
@@ -45,8 +46,8 @@ export class CattleController {
     });
 
     // Search & status filter on Cattle Records view
-    document.getElementById("search-cattle")?.addEventListener("input", () => this.applyFilters());
-    document.getElementById("filter-status")?.addEventListener("change", () => this.applyFilters());
+    document.getElementById("search-cattle")?.addEventListener("input", () => this.renderCattleList());
+    document.getElementById("filter-status")?.addEventListener("change", () => this.renderCattleList());
 
     // Event delegation for Edit / View / Delete buttons in both Dashboard & All Cattle tables
     document.body.addEventListener("click", async (e) => {
@@ -79,27 +80,26 @@ export class CattleController {
       this.refreshAllViews();
     } else if (["cattle", "calving", "medical", "breeding"].includes(viewName)) {
       document.getElementById("view-cattle").classList.add("active");
-      this.renderFilteredSubView(viewName);
+      this.renderCattleList();
     } else {
       document.getElementById("view-secondary").classList.add("active");
       this.renderSecondaryView(viewName);
     }
   }
 
-  renderFilteredSubView(viewName) {
-    const all = this.cattleService.getAllCattle();
-    if (viewName === "calving") {
-      const filtered = all.filter((c) => c.gender === "female" && (c.lastCalvingDate || c.expectedCalvingDate));
-      this.listView.renderList(filtered, "Calving Records");
-    } else if (viewName === "medical") {
-      const filtered = all.filter((c) => c.medications || c.healthStatus !== "healthy");
-      this.listView.renderList(filtered, "Medical & Health Records");
-    } else if (viewName === "breeding") {
-      const filtered = all.filter((c) => c.healthStatus === "pregnant" || c.expectedCalvingDate);
-      this.listView.renderList(filtered, "Breeding History");
-    } else {
-      this.listView.renderList(all, "All Cattle Records");
-    }
+  // Renders the cattle table for the current list view (All, Calving, Medical,
+  // Breeding), narrowed by the search box and status filter.
+  renderCattleList() {
+    const subViews = {
+      calving: { title: "Calving Records", filter: (c) => c.gender === "female" && (c.lastCalvingDate || c.expectedCalvingDate) },
+      medical: { title: "Medical & Health Records", filter: (c) => c.medications || c.healthStatus !== "healthy" },
+      breeding: { title: "Breeding History", filter: (c) => c.healthStatus === "pregnant" || c.expectedCalvingDate },
+    };
+    const { title, filter } = subViews[this.currentView] || { title: "All Cattle Records", filter: () => true };
+    const query = document.getElementById("search-cattle")?.value || "";
+    const status = document.getElementById("filter-status")?.value || "all";
+    const matches = this.cattleService.searchCattle(query, status).filter(filter);
+    this.listView.renderList(matches, title);
   }
 
   renderSecondaryView(viewName) {
@@ -137,13 +137,6 @@ export class CattleController {
         </div>
       `;
     }
-  }
-
-  applyFilters() {
-    const query = document.getElementById("search-cattle")?.value || "";
-    const status = document.getElementById("filter-status")?.value || "all";
-    const filtered = this.cattleService.searchCattle(query, status);
-    this.listView.renderList(filtered, "All Cattle Records");
   }
 
   async handleFormSubmit() {
@@ -187,16 +180,16 @@ export class CattleController {
     document.getElementById("viewCowModalTitle").textContent = `${c.nameBreed} (${c.tagNumber})`;
     document.getElementById("viewCowModalBody").innerHTML = `
       <ul class="list-group list-group-flush">
-        <li class="list-group-item"><strong>Cow ID:</strong> ${c.tagNumber}</li>
-        <li class="list-group-item"><strong>Name / Breed:</strong> ${c.nameBreed || "—"}</li>
+        <li class="list-group-item"><strong>Cow ID:</strong> ${escapeHtml(c.tagNumber)}</li>
+        <li class="list-group-item"><strong>Name / Breed:</strong> ${escapeHtml(c.nameBreed || "—")}</li>
         <li class="list-group-item"><strong>Gender:</strong> ${c.gender === "male" ? "Male" : "Female"}</li>
-        <li class="list-group-item"><strong>Birth Date / Age:</strong> ${c.birthDate || "—"} (${calculateAge(c.birthDate)})</li>
-        <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${c.weight} lbs` : "—"}</li>
-        <li class="list-group-item"><strong>Last Calving:</strong> ${c.lastCalvingDate || "N/A"}</li>
-        <li class="list-group-item"><strong>Expected Calving:</strong> ${c.expectedCalvingDate || "N/A"}</li>
-        <li class="list-group-item"><strong>Medications:</strong> ${c.medications || "None"}</li>
-        <li class="list-group-item"><strong>Status:</strong> <span class="badge ${statusInfo.badgeClass}">${statusInfo.label}</span></li>
-        <li class="list-group-item"><strong>Notes:</strong> ${c.notes || "No notes recorded."}</li>
+        <li class="list-group-item"><strong>Birth Date / Age:</strong> ${escapeHtml(c.birthDate || "—")} (${escapeHtml(calculateAge(c.birthDate))})</li>
+        <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</li>
+        <li class="list-group-item"><strong>Last Calving:</strong> ${escapeHtml(c.lastCalvingDate || "N/A")}</li>
+        <li class="list-group-item"><strong>Expected Calving:</strong> ${escapeHtml(c.expectedCalvingDate || "N/A")}</li>
+        <li class="list-group-item"><strong>Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
+        <li class="list-group-item"><strong>Status:</strong> <span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></li>
+        <li class="list-group-item"><strong>Notes:</strong> ${escapeHtml(c.notes || "No notes recorded.")}</li>
       </ul>
     `;
     new bootstrap.Modal(document.getElementById("viewCowModal")).show();
@@ -210,12 +203,11 @@ export class CattleController {
   }
 
   refreshAllViews() {
-    const all = this.cattleService.getAllCattle();
     const stats = this.cattleService.getStatistics();
     this.dashboardView.renderStats(stats);
     this.dashboardView.renderRecentTable(this.cattleService.getRecentCattle(5));
-    this.dashboardView.renderEventsAndAlerts(all);
-    this.listView.renderList(all);
+    this.dashboardView.renderUpcomingEvents(this.cattleService.getUpcomingCalvings(5));
+    this.renderCattleList();
   }
 
   setupOnlineStatus() {

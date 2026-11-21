@@ -1,16 +1,19 @@
 import { calculateAge, formatHealthStatus } from "../utils/DateHelpers.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 
 export class ListView {
   renderList(cattleList, title = "All Cattle Records") {
-    const titleEl = document.getElementById("records-view-title");
-    const tbody = document.getElementById("all-cattle-tbody");
+    const titleEl = document.getElementById("list-title");
+    const tbody = document.getElementById("list-body");
+    const emptyEl = document.getElementById("list-empty");
     if (titleEl) {
-      titleEl.innerHTML = `<i class="fas fa-cow me-2 text-success"></i>${title}`;
+      titleEl.innerHTML = `<i class="fas fa-cow me-2 text-success"></i>${escapeHtml(title)}`;
     }
     if (!tbody) return;
 
+    if (emptyEl) emptyEl.hidden = cattleList.length > 0;
     if (cattleList.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No matching cattle records found.</td></tr>`;
+      tbody.innerHTML = "";
       return;
     }
 
@@ -24,21 +27,21 @@ export class ListView {
         const calvingInfo =
           c.gender === "male"
             ? "N/A"
-            : `Last: ${c.lastCalvingDate || "—"}<br><small class="text-muted">Due: ${c.expectedCalvingDate || "—"}</small>`;
+            : `Last: ${escapeHtml(c.lastCalvingDate || "—")}<br><small class="text-muted">Due: ${escapeHtml(c.expectedCalvingDate || "—")}</small>`;
 
         return `
           <tr>
-            <td><span class="badge badge-cow">${c.tagNumber}</span></td>
-            <td class="fw-semibold">${c.nameBreed || "Unnamed"}</td>
+            <td><span class="badge badge-cow">${escapeHtml(c.tagNumber)}</span></td>
+            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")}</td>
             <td>${genderHtml}</td>
-            <td>${c.birthDate || "—"}<br><small class="text-muted">${calculateAge(c.birthDate)}</small></td>
+            <td>${escapeHtml(c.birthDate || "—")}<br><small class="text-muted">${escapeHtml(calculateAge(c.birthDate))}</small></td>
             <td>${calvingInfo}</td>
-            <td>${c.medications || "None"}</td>
-            <td><span class="badge ${statusInfo.badgeClass}">${statusInfo.label}</span></td>
+            <td>${escapeHtml(c.medications || "None")}</td>
+            <td><span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></td>
             <td>
-              <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${c.id}" title="Edit"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-sm btn-outline-info btn-view" data-id="${c.id}" title="View"><i class="fas fa-eye"></i></button>
-              <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${c.id}" title="Delete"><i class="fas fa-trash"></i></button>
+              <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${escapeHtml(c.id)}" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-outline-info btn-view" data-id="${escapeHtml(c.id)}" title="View"><i class="fas fa-eye"></i></button>
+              <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${escapeHtml(c.id)}" title="Delete"><i class="fas fa-trash"></i></button>
             </td>
           </tr>
         `;

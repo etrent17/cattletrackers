@@ -15,7 +15,7 @@ src/                 browser ES modules
   controllers/       CattleController
   services/          CattleService (API calls and statistics)
   views/             DashboardView, ListView, FormView
-  models/ utils/     Cattle model, validators, date helpers
+  models/ utils/     Cattle model, validators, date helpers, escapeHtml
 ```
 
 ## Request flow
@@ -37,6 +37,10 @@ Date columns are returned as `YYYY-MM-DD` strings. The API uses camelCase names 
 ## Security configuration
 
 Helmet sets a content security policy that allows scripts from the app and `cdn.jsdelivr.net`, and styles and fonts from jsdelivr and cdnjs. HSTS is disabled until HTTPS is in place. The server trusts one proxy hop.
+
+## Rendering record fields
+
+Always escape record fields in templates. Views build HTML with template strings and `innerHTML`, so every value that comes from a user or the API (cow number, name/breed, medications, notes, dates, ids, status labels) is wrapped in `escapeHtml()` from `src/utils/escapeHtml.js`, in element text and in quoted attribute values such as `data-id="${escapeHtml(c.id)}"`. Apply it to the final string, including any fallback: `${escapeHtml(c.nameBreed || "Unnamed")}`. Only fixed markup written in the template itself (icons, badges, `<br>`) stays unescaped. When a whole element holds one plain value, setting `textContent` (or an input's `value`) is simpler and needs no escaping. Never escape before saving: the API stores the text exactly as typed.
 
 ## Service worker
 
