@@ -1,4 +1,5 @@
 import { CattleService } from "../services/CattleService.js";
+import { UsersController } from "./UsersController.js";
 import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
@@ -134,6 +135,11 @@ export class CattleController {
     };
 
     titleEl.textContent = titles[viewName] || "Overview";
+    if (viewName === "users") {
+      this.usersController ??= new UsersController({ onAccessLost: () => this.switchView("dashboard") });
+      this.usersController.show(bodyEl).catch((err) => console.error("User Management failed:", err));
+      return;
+    }
 
     if (viewName === "settings") {
       bodyEl.innerHTML = `

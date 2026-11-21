@@ -8,6 +8,7 @@ const urlsToCache = [
   '/src/auth.js',
   '/src/app.js',
   '/src/controllers/CattleController.js',
+  '/src/controllers/UsersController.js',
   '/src/models/Cattle.js',
   '/src/services/CattleService.js',
   '/src/utils/DateHelpers.js',
@@ -17,6 +18,7 @@ const urlsToCache = [
   '/src/views/DashboardView.js',
   '/src/views/FormView.js',
   '/src/views/ListView.js',
+  '/src/views/UsersView.js',
 ];
 
 self.addEventListener('install', (event) => {
