@@ -111,6 +111,46 @@ Each calving is returned as `{ id, cattleId, cattleTag, cattleName, calvingDate,
 
 After every create, update and delete, the animal's `lastCalvingDate` is set to her newest calving date (empty when she has none), in the same transaction. Deleting an animal deletes her calvings.
 
+## Breedings and pregnancy checks (sign-in required)
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/breedings` | Every breeding in your herd, newest breeding date first |
+| GET | `/api/breedings/needs-check` | Cows that need a pregnancy check (below). Optional `today` (`YYYY-MM-DD`, the caller's local date; default the server's UTC date) |
+| GET | `/api/cattle/:cattleId/breedings` | One animal's breedings, newest first; 404 `Cattle not found` if the animal is not yours |
+| POST | `/api/cattle/:cattleId/breedings` | Records a breeding; 201. 404 if the animal is not yours; 400 if it is male |
+| PUT | `/api/breedings/:id` | Replaces the breeding's fields (fields left out are cleared); 404 `Breeding record not found` if not yours. The animal cannot be changed |
+| DELETE | `/api/breedings/:id` | Deletes the breeding; 404 if not yours. Its checks are kept, with `breedingId` set to `null` |
+| GET | `/api/pregnancy-checks` | Every check in your herd, newest check date first |
+| GET | `/api/cattle/:cattleId/pregnancy-checks` | One animal's checks, newest first; 404 `Cattle not found` if the animal is not yours |
+| POST | `/api/cattle/:cattleId/pregnancy-checks` | Records a check; 201. 404 if the animal is not yours; 400 if it is male |
+| PUT | `/api/pregnancy-checks/:id` | Replaces the check's fields; 404 `Pregnancy check not found` if not yours |
+| DELETE | `/api/pregnancy-checks/:id` | Deletes the check; 404 if not yours |
+
+Breeding fields: `breedingDate` (required, ISO 8601, not in the future), `method` (`ai` or `natural`), `sire` (free text, max 100), `sireCattleId` (the id of one of **your** animals recorded as `male`; anything else returns 400 `Choose a bull from your herd`), `technician` (max 100), `notes` (max 2000). With `sireCattleId`, `sire` is ignored and saved as the bull's number and name, so the breeding still names him after he is deleted (deleting the bull sets `sireCattleId` to `null`).
+
+Each breeding is returned as `{ id, cattleId, cattleTag, cattleName, breedingDate, method, sire, sireCattleId, sireTag, sireName, technician, notes, expectedCalvingDate, checkResult, checkDate, createdAt }`. `sireTag` and `sireName` are the linked bull's current details (`""` without one). `expectedCalvingDate` is `breedingDate` + 283 days. `checkResult` and `checkDate` are from the newest check linked to this breeding (`""` without one). A `PUT` that would put the breeding after one of its linked checks returns 400.
+
+Check fields: `checkDate` (required, ISO 8601, not in the future), `result` (required: `pregnant`, `open`, `unsure`), `method` (`palpation`, `ultrasound`, `blood_test`, `other`), `breedingId` (optional, one of **this animal's** breedings dated on or before the check; otherwise 400 `Unknown breeding record` or `The check date cannot be before the breeding date`), `notes` (max 2000). Each check is returned as `{ id, cattleId, cattleTag, cattleName, checkDate, result, method, breedingId, breedingDate, notes, createdAt }`.
+
+### Expected calving date and health status
+
+These run in the same transaction as the change (`lib/breeding.js`). The cow's *current breeding* is her newest breeding dated after her last calving; the date it *implies* is its date + 283 days, or none when the newest check since it is `open`.
+
+- `POST` of a breeding that becomes the current breeding sets `expectedCalvingDate` to the implied date.
+- `PUT`/`DELETE` of a breeding, `DELETE` of a check, and an `unsure` check move `expectedCalvingDate` from the old implied date to the new one, only while it still equals the old one (a date set by hand through `PUT /api/cattle/:id` is kept).
+- `POST`/`PUT` of the cow's newest check, dated on or after her current breeding and after her last calving: `pregnant` changes `healthStatus` `healthy` to `pregnant` and fills an empty `expectedCalvingDate` with the implied date; `open` clears `expectedCalvingDate` and changes `pregnant` to `healthy`. Other statuses are not changed. Deleting a check never changes `healthStatus`.
+- A calving recorded with `clearExpected: true` clears the date and Pregnant; the breeding before it is no longer current, so later breeding edits leave the date empty.
+
+### Needs check
+
+```json
+{ "today": "2026-06-01", "checkAfterDays": 35, "gestationDays": 283,
+  "cows": [{ "...breeding fields": "", "daysSinceBreeding": 92 }] }
+```
+
+One entry per cow whose current breeding is more than `checkAfterDays` days before `today` and has no check dated on or after it, oldest breeding first. Each entry is that breeding (fields as above) plus `daysSinceBreeding`.
+
 ## Not available
 
 There are no performance-report, health-report, or treatment endpoints.
