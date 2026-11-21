@@ -13,7 +13,7 @@ public/              index.html, login.html, CSS, service-worker.js
 src/                 browser ES modules
   app.js             startup and sign-out
   auth.js            login page logic
-  controllers/       CattleController, CalvingController, UsersController, FinanceController (financial pages)
+  controllers/       CattleController, CalvingController, UsersController, FinanceController (financial pages), ReportsController (performance and health reports)
   services/          CattleService (API calls and statistics), AccountService (password change), CalvingService, FinanceService
   views/             DashboardView, ListView, FormView, SettingsView, UsersView, CalvingView, FinanceView
   models/ utils/     Cattle model, validators, date helpers, escapeHtml, feedback, money (cents), csv
