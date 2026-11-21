@@ -1,4 +1,5 @@
 import { formatHealthStatus } from "../utils/DateHelpers.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 
 export class DashboardView {
   renderStats(stats) {
@@ -31,15 +32,15 @@ export class DashboardView {
 
         return `
           <tr>
-            <td><span class="badge badge-cow">${c.tagNumber}</span></td>
-            <td class="fw-semibold">${c.nameBreed || "Unnamed"}</td>
+            <td><span class="badge badge-cow">${escapeHtml(c.tagNumber)}</span></td>
+            <td class="fw-semibold">${escapeHtml(c.nameBreed || "Unnamed")}</td>
             <td>${genderHtml}</td>
-            <td>${c.gender === "male" ? "N/A" : c.lastCalvingDate || "—"}</td>
-            <td>${c.medications || "None"}</td>
-            <td><span class="badge ${statusInfo.badgeClass}">${statusInfo.label}</span></td>
+            <td>${c.gender === "male" ? "N/A" : escapeHtml(c.lastCalvingDate || "—")}</td>
+            <td>${escapeHtml(c.medications || "None")}</td>
+            <td><span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></td>
             <td>
-              <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${c.id}" title="Edit"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-sm btn-outline-info btn-view" data-id="${c.id}" title="View"><i class="fas fa-eye"></i></button>
+              <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${escapeHtml(c.id)}" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-outline-info btn-view" data-id="${escapeHtml(c.id)}" title="View"><i class="fas fa-eye"></i></button>
             </td>
           </tr>
         `;
@@ -61,9 +62,9 @@ export class DashboardView {
                 <div>
                   <i class="fas fa-baby text-warning me-2"></i>
                   <strong>Calving Due</strong><br>
-                  <small class="text-muted">${c.nameBreed || "Unnamed"} (${c.tagNumber})</small>
+                  <small class="text-muted">${escapeHtml(c.nameBreed || "Unnamed")} (${escapeHtml(c.tagNumber)})</small>
                 </div>
-                <span class="badge bg-warning text-dark rounded-pill">${c.expectedCalvingDate}</span>
+                <span class="badge bg-warning text-dark rounded-pill">${escapeHtml(c.expectedCalvingDate)}</span>
               </li>`
             )
             .join("")
