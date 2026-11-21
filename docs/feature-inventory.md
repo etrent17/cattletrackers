@@ -13,8 +13,8 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 | Password show/hide | `public/login.html`, `src/auth.js` | Implemented | |
 | Session persistence | `app.js` | Implemented | Stored in PostgreSQL, 7-day cookie |
 | Demo mode | `POST /api/auth/demo`, `lib/demo.js` | Implemented | Needs `DEMO_MODE=true` |
-| User management API | `routes/users.js` | Implemented | Admin only |
-| User management screen | `index.html` nav item | Placeholder | Shows herd statistics, not users |
+| User management API | `routes/users.js` | Implemented | Admin only; list, add, change role, delete; last admin protected |
+| User management screen | `src/controllers/UsersController.js`, `src/views/UsersView.js` | Implemented | Admins only; nav item hidden for other users |
 
 ## Cattle records
 

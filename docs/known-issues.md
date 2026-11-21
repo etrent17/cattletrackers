@@ -31,6 +31,7 @@ The API exists; there is no interface.
 - **8. Startup failures were silent.** Listeners are attached before the herd loads; a failed load or unreachable server shows an error banner with Retry, and `app.js` catches a failing start-up. Fixed on `feature/error-handling`, verified in a browser (server stopped, requests aborted or answered 500).
 - **9. Delete had no error handling.** A failed delete shows an error toast; deleting a record already deleted in another tab says so and refreshes the list. Fixed on `feature/error-handling`, verified in a browser.
 - (13) No automated tests: `npm test` now runs unit and API tests against PostgreSQL, `npm run test:e2e` runs a browser smoke test, and GitHub Actions runs both on every push and pull request. Added on `feature/automated-tests`; the workflow passed on GitHub for the branch push (run 44942939463).
+- **7. User Management screen was a placeholder.** Admins can now list, add, and delete users and change roles from the screen; the nav item is hidden for non-admins. The API gained `PATCH /api/users/:id`, reads the role from the database on each admin request (demotion takes effect immediately), ends a deleted user's sessions, and never removes the last admin. Fixed on `feature/user-management-ui`, verified in a browser (`e2e/users.e2e.js`).
 
 ## Note on login graphics
 
