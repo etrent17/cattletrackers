@@ -1,0 +1,61 @@
+# Feature Inventory
+
+Based on commit `7fb8152`, reviewed 2026-11-21 from source code only. Every row is **Not tested** until [the testing checklist](testing-checklist.md) is run.
+
+Status key: **Implemented** = code is present. **Partial** = some pieces work in code, others missing. **Placeholder** = a screen or label without distinct functionality. **Defective** = a confirmed defect blocks it (see [known issues](known-issues.md)). **Missing** = not in the code.
+
+## Authentication and accounts
+
+| Feature | Where | Status | Notes |
+|---|---|---|---|
+| First-admin setup | `POST /api/auth/setup`, `src/auth.js` | Implemented | Only works while no non-demo user exists |
+| Login / logout | `/api/auth/login`, `/api/auth/logout` | Implemented | Rate limited to 20 requests per 15 minutes |
+| Password show/hide | `public/login.html`, `src/auth.js` | Implemented | |
+| Session persistence | `server.js` | Implemented | Stored in PostgreSQL, 7-day cookie |
+| Demo mode | `POST /api/auth/demo`, `lib/demo.js` | Implemented | Needs `DEMO_MODE=true` |
+| User management API | `routes/users.js` | Implemented | Admin only |
+| User management screen | `index.html` nav item | Placeholder | Shows herd statistics, not users |
+
+## Cattle records
+
+| Feature | Where | Status | Notes |
+|---|---|---|---|
+| Add cattle | `FormView.js`, `POST /api/cattle` | Implemented | Form IDs fixed in `7fb8152`; untested |
+| Edit cattle | `FormView.js`, `PUT /api/cattle/:id` | Implemented | Same fix; untested |
+| View details modal | `CattleController.handleInspect` | Implemented | |
+| Delete cattle | `routes/cattle.js` | Partial | Delete button exists only in the All Cattle table; that table does not render (see known issues) |
+| Search and status filter | `CattleService.searchCattle` | Defective | Filters run, but the table they render into is not found |
+| Duplicate cow-number check | client and database | Implemented | Case-insensitive, per owner |
+| Cattle list table | `ListView.js` | Defective | Element IDs do not match `index.html` |
+
+## Dashboard and views
+
+| Feature | Where | Status | Notes |
+|---|---|---|---|
+| Statistics cards | `DashboardView.renderStats` | Defective | `getStatistics()` added in `e8d97e1`, but card IDs do not match |
+| Recent cattle table | `DashboardView.renderRecentTable` | Defective | ID mismatch |
+| Upcoming events and alerts | `DashboardView.renderEventsAndAlerts` | Defective | ID mismatch; no alerts container exists |
+| Calving, Medical, Breeding views | `renderFilteredSubView` | Partial | Filtered copies of the cattle list, not separate event histories |
+| One-view-at-a-time navigation | `public/styles.css` | Implemented | Added in `29162f2` |
+
+## Reports, settings, finance
+
+| Feature | Where | Status | Notes |
+|---|---|---|---|
+| Performance reports | nav item `reports` | Placeholder | Shows three herd statistics |
+| Health reports | nav item `health-reports` | Placeholder | Same content |
+| Financial reports | nav item `financial-reports` | Placeholder | Same content |
+| Financial records | none | Missing | No table, route, or form |
+| System settings | nav item `settings` | Placeholder | Text and reset button describe `localStorage`, which the app does not use |
+
+## Platform
+
+| Feature | Where | Status | Notes |
+|---|---|---|---|
+| Online/offline indicator | `setupOnlineStatus` | Implemented | |
+| Static asset caching | `public/service-worker.js` | Implemented | API requests are never cached |
+| Offline cattle editing | none | Missing | |
+| Health endpoint | `GET /api/health` | Implemented | Does not check the database |
+| Security headers and CSP | `server.js` (helmet) | Implemented | HSTS disabled |
+| Docker installer | `install.sh` | Implemented | |
+| Automated tests | `package.json` | Missing | `npm test` is a placeholder |
