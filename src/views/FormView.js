@@ -65,5 +65,12 @@ export class FormView {
         ? "Set by her calving records. Record or edit a calving to change it."
         : "Saved as her first calving record.";
     }
+    // The weight follows the weighings: a weight typed here is saved as a weighing dated today.
+    const weightHelp = document.getElementById("f-weight-help");
+    if (weightHelp) {
+      weightHelp.textContent = isEditing
+        ? "A new weight is saved as a weighing dated today. Earlier weighings: Weight history tab."
+        : "Saved as its first weighing, dated today.";
+    }
   }
 }

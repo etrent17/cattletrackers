@@ -44,7 +44,8 @@ export class CattleService {
     if (!validateWeight(data.weight)) throw new Error("Invalid weight");
     const created = await api("/api/cattle", {
       method: "POST",
-      body: JSON.stringify({ ...data, weight: data.weight ? parseFloat(data.weight) : null }),
+      // A weight becomes the animal's first weighing, dated today (the user's local date).
+      body: JSON.stringify({ ...data, weight: data.weight ? parseFloat(data.weight) : null, weightDate: todayISO() }),
     });
     const cattle = new Cattle(created);
     this.cattle.unshift(cattle);
@@ -56,7 +57,9 @@ export class CattleService {
     if (!existing) throw new Error("Cattle not found");
     const updated = await api(`/api/cattle/${encodeURIComponent(id)}`, {
       method: "PUT",
-      body: JSON.stringify({ ...data, weight: data.weight ? parseFloat(data.weight) : null }),
+      // A weight different from the current one is recorded as a new weighing dated today; the
+      // same weight or a blank one records nothing (see PUT /api/cattle/:id).
+      body: JSON.stringify({ ...data, weight: data.weight ? parseFloat(data.weight) : null, weightDate: todayISO() }),
     });
     existing.update(updated);
     return existing;

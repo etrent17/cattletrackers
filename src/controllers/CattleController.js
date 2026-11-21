@@ -9,6 +9,7 @@ import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHel
 import { hideErrorBanner, showErrorBanner, showToast } from "../utils/feedback.js";
 import { escapeHtml } from "../utils/escapeHtml.js";
 import { CalvingController } from "./CalvingController.js";
+import { WeightController } from "./WeightController.js";
 
 export class CattleController {
   constructor() {
@@ -30,7 +31,7 @@ export class CattleController {
     };
     this.calvingController = new CalvingController(host);
     // view name -> controller with init(), show(), hide(), render(), detailTab()
-    this.recordPages = { calving: this.calvingController };
+    this.recordPages = { calving: this.calvingController, weights: new WeightController(host) };
     // Tabs after "Details" in the cow details modal: { id, label, appliesTo?(cow), render(cow, pane) }
     this.detailTabs = Object.values(this.recordPages).map((page) => page.detailTab());
     this.financeController = new FinanceController({ cattleService: this.cattleService, getCurrentView: () => this.currentView });
