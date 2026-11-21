@@ -93,4 +93,25 @@ export class CattleService {
       (c) => c.tagNumber.trim().toLowerCase() === normalized && c.id !== excludeId
     );
   }
+
+  getStatistics() {
+    const now = new Date();
+    const calvingThisMonth = this.cattle.filter((cow) => {
+      if (!cow.expectedCalvingDate) return false;
+      const due = new Date(cow.expectedCalvingDate);
+      return (
+        !Number.isNaN(due.getTime()) &&
+        due.getUTCFullYear() === now.getFullYear() &&
+        due.getUTCMonth() === now.getMonth()
+      );
+    }).length;
+
+    return {
+      total: this.cattle.length,
+      healthy: this.cattle.filter((cow) => cow.healthStatus === "healthy").length,
+      calvingThisMonth,
+      // Current treatment status is a proxy, not a treatment schedule.
+      scheduledTreatments: this.cattle.filter((cow) => cow.healthStatus === "under_treatment").length,
+    };
+  }
 }
