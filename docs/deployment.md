@@ -37,13 +37,19 @@ GitHub Actions (`.github/workflows/docker-publish.yml`) builds the image, starts
 | `ghcr.io/etrent17/cattletrackers:latest` | `main` |
 | `ghcr.io/etrent17/cattletrackers:sha-<commit>` | that exact commit |
 
-To run it on a dev or test Docker host without the source, copy [`deploy/docker-compose.dev.yml`](../deploy/docker-compose.dev.yml) there (or paste it into a Portainer-style stack) and start it:
+To run it on a dev or test Docker host without the source, copy [`deploy/start.sh`](../deploy/start.sh) to the host (any folder) and run it:
 
 ```
-SESSION_SECRET=$(openssl rand -hex 32) DB_PASSWORD=$(openssl rand -hex 24) docker compose -f docker-compose.dev.yml up -d
+./start.sh
 ```
 
-Keep the same `DB_PASSWORD` on later runs (put both values in a `.env` file next to the compose file): PostgreSQL fixes the password into its volume on first start. The app listens on port 3036 (`APP_PORT`), demo mode is on by default (`DEMO_MODE`), and `IMAGE_TAG=latest` switches to the `main` build. To update: `docker compose -f docker-compose.dev.yml pull && docker compose -f docker-compose.dev.yml up -d`.
+On the first run it downloads `docker-compose.dev.yml` (if it isn't already next to the script), creates `.env` with generated secrets, picks a free host port (3036, or the next free one above it if something else is using it), starts the app and PostgreSQL, waits until the app answers, and prints its address. The chosen port is saved in `.env` as `APP_PORT`, so the address stays the same on later runs; if that port has been taken by something else in the meantime, it picks the next free one and tells you. Run it again to update to the newest image. `./start.sh stop` stops the stack (data is kept), `./start.sh status` shows the address, `./start.sh logs` follows the app's logs.
+
+Keep `.env`: PostgreSQL fixes `DB_PASSWORD` into its volume on first start. Other settings for `.env`: `IMAGE_TAG=latest` to run the `main` build instead of `dev`, `DEMO_MODE=false` to hide the demo button, `APP_PORT` to choose the port yourself.
+
+Without the script (for example in a Portainer-style stack), use [`deploy/docker-compose.dev.yml`](../deploy/docker-compose.dev.yml) directly and set `SESSION_SECRET`, `DB_PASSWORD` and, if 3036 is taken, `APP_PORT` yourself. The image needs that PostgreSQL service: `docker run` on the image alone stops with a message saying so.
+
+Outside Docker (`npm start`), the app also looks for a free port: if `PORT` (default 3000) is taken it uses the next free one and logs which.
 
 **Access.** New GitHub packages start private. Either the repository owner makes the package public (GitHub → the repository's Packages → `cattletrackers` → Package settings → Change visibility), or each person pulling signs in once with a personal access token that has the `read:packages` scope: `docker login ghcr.io -u <github-username>`. Repository collaborators can pull because the package inherits the repository's access.
 
