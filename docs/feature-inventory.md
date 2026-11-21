@@ -11,7 +11,7 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 | First-admin setup | `POST /api/auth/setup`, `src/auth.js` | Implemented | Only works while no non-demo user exists |
 | Login / logout | `/api/auth/login`, `/api/auth/logout` | Implemented | Rate limited to 20 requests per 15 minutes |
 | Password show/hide | `public/login.html`, `src/auth.js` | Implemented | |
-| Session persistence | `server.js` | Implemented | Stored in PostgreSQL, 7-day cookie |
+| Session persistence | `app.js` | Implemented | Stored in PostgreSQL, 7-day cookie |
 | Demo mode | `POST /api/auth/demo`, `lib/demo.js` | Implemented | Needs `DEMO_MODE=true` |
 | User management API | `routes/users.js` | Implemented | Admin only |
 | User management screen | `index.html` nav item | Placeholder | Shows herd statistics, not users |
@@ -56,7 +56,7 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 | Static asset caching | `public/service-worker.js` | Implemented | API requests are never cached |
 | Offline cattle editing | none | Missing | |
 | Health endpoint | `GET /api/health` | Implemented | Returns 503 when the database is down |
-| Security headers and CSP | `server.js` (helmet) | Implemented | HSTS off unless `HSTS=true` |
+| Security headers and CSP | `app.js` (helmet) | Implemented | HSTS off unless `HSTS=true` |
 | Docker installer | `install.sh`, `docker-compose.yml` | Implemented | |
 | Database backup and restore | `scripts/backup.sh`, `scripts/restore.sh` | Implemented | See deployment docs |
-| Automated tests | `package.json` | Missing | `npm test` is a placeholder |
+| Automated tests | `test/`, `e2e/`, `.github/workflows/test.yml` | Implemented | `npm test` (unit and API), `npm run test:e2e` (browser); see the README |
