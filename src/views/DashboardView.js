@@ -1,4 +1,4 @@
-import { formatHealthStatus } from "../utils/DateHelpers.js";
+import { formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
 
 export class DashboardView {
   renderStats(stats) {
@@ -24,10 +24,7 @@ export class DashboardView {
     tbody.innerHTML = cattleList
       .map((c) => {
         const statusInfo = formatHealthStatus(c.healthStatus);
-        const genderHtml =
-          c.gender === "male"
-            ? `<i class="fas fa-mars text-primary"></i> Male`
-            : `<i class="fas fa-venus text-danger"></i> Female`;
+        const genderHtml = formatGender(c.gender);
 
         return `
           <tr>

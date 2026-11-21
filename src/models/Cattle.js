@@ -3,7 +3,7 @@ export class Cattle {
     this.id = data.id || Date.now().toString();
     this.tagNumber = data.tagNumber || data.cowNumber || "";
     this.nameBreed = data.nameBreed || "";
-    this.gender = data.gender || "female";
+    this.gender = data.gender || ""; // "" = not recorded; never guess
     this.birthDate = data.birthDate || null;
     this.lastCalvingDate = data.lastCalvingDate || null;
     this.expectedCalvingDate = data.expectedCalvingDate || null;

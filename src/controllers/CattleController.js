@@ -2,7 +2,7 @@ import { CattleService } from "../services/CattleService.js";
 import { DashboardView } from "../views/DashboardView.js";
 import { FormView } from "../views/FormView.js";
 import { ListView } from "../views/ListView.js";
-import { calculateAge, formatHealthStatus } from "../utils/DateHelpers.js";
+import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
 
 export class CattleController {
   constructor() {
@@ -90,7 +90,7 @@ export class CattleController {
   // Breeding), narrowed by the search box and status filter.
   renderCattleList() {
     const subViews = {
-      calving: { title: "Calving Records", filter: (c) => c.gender === "female" && (c.lastCalvingDate || c.expectedCalvingDate) },
+      calving: { title: "Calving Records", filter: (c) => c.gender !== "male" && (c.lastCalvingDate || c.expectedCalvingDate) },
       medical: { title: "Medical & Health Records", filter: (c) => c.medications || c.healthStatus !== "healthy" },
       breeding: { title: "Breeding History", filter: (c) => c.healthStatus === "pregnant" || c.expectedCalvingDate },
     };
@@ -181,7 +181,7 @@ export class CattleController {
       <ul class="list-group list-group-flush">
         <li class="list-group-item"><strong>Cow ID:</strong> ${c.tagNumber}</li>
         <li class="list-group-item"><strong>Name / Breed:</strong> ${c.nameBreed || "—"}</li>
-        <li class="list-group-item"><strong>Gender:</strong> ${c.gender === "male" ? "Male" : "Female"}</li>
+        <li class="list-group-item"><strong>Gender:</strong> ${formatGender(c.gender)}</li>
         <li class="list-group-item"><strong>Birth Date / Age:</strong> ${c.birthDate || "—"} (${calculateAge(c.birthDate)})</li>
         <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${c.weight} lbs` : "—"}</li>
         <li class="list-group-item"><strong>Last Calving:</strong> ${c.lastCalvingDate || "N/A"}</li>

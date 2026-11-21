@@ -52,3 +52,10 @@ export function formatHealthStatus(status) {
   };
   return statusMap[status] || { label: status || "Healthy", badgeClass: "bg-secondary" };
 }
+
+// Gender as table/modal markup. A record saved without a gender shows "—".
+export function formatGender(gender) {
+  if (gender === "male") return `<i class="fas fa-mars text-primary"></i> Male`;
+  if (gender === "female") return `<i class="fas fa-venus text-danger"></i> Female`;
+  return `<span class="text-muted" title="Not recorded">—</span>`;
+}
