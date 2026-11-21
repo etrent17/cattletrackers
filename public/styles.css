@@ -75,3 +75,16 @@ aside .nav-link.active {
 @media (prefers-reduced-motion: reduce) {
   .toast-notification { transition: none; }
 }
+
+/* Weight history chart (src/views/WeightView.js) */
+.weight-chart { display: block; width: 100%; height: auto; max-height: 260px; background: #fff; border-radius: .5rem; }
+.weight-chart-grid { stroke: #e3e6e4; stroke-width: 1; }
+.weight-chart-label { fill: #5c6b62; font-size: 12px; }
+.weight-chart-line { fill: none; stroke: var(--green-700); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.weight-chart-dot { fill: var(--green-700); stroke: #fff; stroke-width: 2; }
+.weight-chart-point:hover .weight-chart-dot { r: 6; }
+.weight-notes { min-width: 8rem; overflow-wrap: anywhere; }
+/* Batch entry: keep inputs usable on phones; the table scrolls sideways instead. */
+#weight-batch-body .wb-cow { min-width: 11rem; }
+#weight-batch-body .wb-weight { min-width: 6rem; }
+#weight-batch-body .wb-notes { min-width: 9rem; }

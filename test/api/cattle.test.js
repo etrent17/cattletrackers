@@ -113,8 +113,10 @@ describe('update', () => {
     const { body: cow } = await client.post('/api/cattle').send(FULL).expect(201);
     const res = await client.put(`/api/cattle/${cow.id}`).send({ tagNumber: 'CT-100' }).expect(200);
     assert.equal(res.body.nameBreed, '');
-    assert.equal(res.body.weight, null);
     assert.equal(res.body.healthStatus, 'healthy');
+    // Except the weight, which follows the weighings (test/api/weighings.test.js): leaving it out
+    // records nothing and keeps the latest weighing.
+    assert.equal(res.body.weight, FULL.weight);
   });
 
   test('can keep its own cow number, in a different case', async () => {
@@ -242,11 +244,39 @@ describe('validation', () => {
   });
 
   // docs/api.md says weight must be greater than 0, and the form rejects 0
-  // (test/unit/validators.test.mjs), but the API skips validation for falsy values and stores 0.
-  test('rejects a weight of 0', { todo: 'bug: the API accepts weight 0 and stores it (optional({ values: "falsy" }) skips the check)' }, async () => {
+  // (test/unit/validators.test.mjs). The API used to skip the check for 0 (optional({ values:
+  // 'falsy' })) and store it; see docs/known-issues.md.
+  test('rejects a weight of 0', async () => {
     const client = await signedIn('a@example.com');
-    const res = await client.post('/api/cattle').send({ tagNumber: 'CT-1', weight: 0 }).expect(400);
+    for (const weight of [0, '0', '0.00', 0.001]) {
+      const res = await client.post('/api/cattle').send({ tagNumber: 'CT-1', weight }).expect(400);
+      assert.equal(res.body.error, 'Invalid weight', `weight ${JSON.stringify(weight)}`);
+    }
+    assert.equal((await client.get('/api/cattle')).body.length, 0);
+  });
+
+  test('update rejects a weight of 0 and keeps the record', async () => {
+    const client = await signedIn('a@example.com');
+    const { body: cow } = await client.post('/api/cattle').send({ tagNumber: 'CT-1', weight: 900 }).expect(201);
+    const res = await client.put(`/api/cattle/${cow.id}`).send({ tagNumber: 'CT-1', weight: 0 }).expect(400);
     assert.equal(res.body.error, 'Invalid weight');
+    assert.equal((await client.get('/api/cattle')).body[0].weight, 900);
+  });
+
+  test('an empty string, null or a missing weight still means "no weight"', async () => {
+    const client = await signedIn('a@example.com');
+    for (const [tagNumber, extra] of [['CT-1', { weight: '' }], ['CT-2', { weight: null }], ['CT-3', {}]]) {
+      const res = await client.post('/api/cattle').send({ tagNumber, ...extra }).expect(201);
+      assert.equal(res.body.weight, null, tagNumber);
+    }
+  });
+
+  test('rejects a weight that is not a number or a numeric string', async () => {
+    const client = await signedIn('a@example.com');
+    for (const weight of [true, false, [], {}, ' ', '12kg']) {
+      const res = await client.post('/api/cattle').send({ tagNumber: 'CT-1', weight }).expect(400);
+      assert.equal(res.body.error, 'Invalid weight', `weight ${JSON.stringify(weight)}`);
+    }
   });
 
   test('malformed JSON is a 400, not a server error', async () => {

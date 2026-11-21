@@ -38,6 +38,7 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 | Upcoming events and alerts | `DashboardView.renderEventsAndAlerts` | Defective | ID mismatch; no alerts container exists |
 | Calving, Medical, Breeding views | `renderFilteredSubView` | Partial | Filtered copies of the cattle list, not separate event histories |
 | Breeding records (Breeding History page) | `routes/breedings.js`, `routes/pregnancy-checks.js`, `BreedingController` | Implemented | Replaces the Breeding filtered view (feature 09): breedings and pregnancy checks with add/edit/delete, needs-check list, sire picker of the herd's bulls, Breeding tab in the cow details; recording a breeding fills the expected calving date, a check sets or clears Pregnant. Tested by `test/api/breedings.test.js`, `test/api/pregnancy-checks.test.js`, `e2e/breeding.e2e.js` |
+| Weight tracking | nav item `weights`, `routes/weighings.js`, `WeightController.js` | Implemented | Weighing history per animal (lbs); batch entry for many animals on one date with per-row results; cow details tab with chart and average daily gain; the animal's weight is its newest weighing. Tested by API, unit and browser tests. kg not supported yet |
 | One-view-at-a-time navigation | `public/styles.css` | Implemented | Added in `29162f2` |
 
 ## Reports, settings, finance

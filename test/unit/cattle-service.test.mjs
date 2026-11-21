@@ -2,6 +2,7 @@ import { test, describe, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { CattleService } from '../../src/services/CattleService.js';
 import { Cattle } from '../../src/models/Cattle.js';
+import { todayISO } from '../../src/utils/DateHelpers.js';
 
 // Local noon on 15 June 2026.
 const NOW = new Date(2026, 5, 15, 12, 0, 0);
@@ -192,7 +193,8 @@ describe('API calls (fetch stubbed)', () => {
     const [url, options] = fetchMock.mock.calls[0].arguments;
     assert.equal(url, '/api/cattle');
     assert.equal(options.method, 'POST');
-    assert.deepEqual(JSON.parse(options.body), { tagNumber: 'CT-9', weight: 1200.5 });
+    // weightDate dates the first weighing: the user's local date (feature 10)
+    assert.deepEqual(JSON.parse(options.body), { tagNumber: 'CT-9', weight: 1200.5, weightDate: todayISO() });
     assert.equal(created.id, 'new');
     assert.equal(service.cattle[0], created);
     assert.equal(service.cattle.length, 7);
@@ -234,6 +236,7 @@ describe('API calls (fetch stubbed)', () => {
     const [url, options] = fetchMock.mock.calls[0].arguments;
     assert.equal(url, '/api/cattle/a');
     assert.equal(options.method, 'PUT');
+    assert.deepEqual(JSON.parse(options.body), { tagNumber: 'CT-001', nameBreed: 'Daisy II', weight: null, weightDate: todayISO() });
     assert.equal(updated.nameBreed, 'Daisy II');
     assert.equal(service.getCattleById('a').healthStatus, 'pregnant');
   });

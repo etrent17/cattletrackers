@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cattle-trackers-v13';
+const CACHE_NAME = 'cattle-trackers-v14';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -15,6 +15,9 @@ const urlsToCache = [
   '/src/controllers/BreedingController.js',
   '/src/services/BreedingService.js',
   '/src/views/BreedingView.js',
+  '/src/controllers/WeightController.js',
+  '/src/services/WeightService.js',
+  '/src/views/WeightView.js',
   '/src/controllers/FinanceController.js',
   '/src/services/FinanceService.js',
   '/src/utils/csv.js',

@@ -83,6 +83,9 @@ app.use('/api/cattle/:cattleId/breedings', breedings.forCattle);
 app.use('/api/breedings', breedings.router);
 app.use('/api/cattle/:cattleId/pregnancy-checks', pregnancyChecks.forCattle);
 app.use('/api/pregnancy-checks', pregnancyChecks.router);
+const weighings = require('./routes/weighings');
+app.use('/api/cattle/:cattleId/weighings', weighings.forCattle);
+app.use('/api/weighings', weighings.router);
 app.use('/api/cattle', require('./routes/cattle'));
 app.use('/api/transactions', require('./routes/transactions'));
 

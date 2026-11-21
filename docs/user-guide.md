@@ -12,7 +12,7 @@ Describes the interface as coded at commit `7fb8152`. Several screens are affect
 
 ## Navigating
 
-The left sidebar switches views: Dashboard, Cattle Records, Calving Records, Medical Records, Breeding History, Financial Records, three report pages, System Settings, and User Management. Only the selected view is shown.
+The left sidebar switches views: Dashboard, Cattle Records, Calving Records, Weights, Medical Records, Breeding History, Financial Records, three report pages, System Settings, and User Management. Only the selected view is shown.
 
 ## Adding a cow (untested)
 
@@ -38,7 +38,7 @@ On Cattle Records, type in the search box to match cow number, name/breed, medic
 | Name/Breed | Up to 100 characters |
 | Gender | Female or Male; optional, shown as "—" when not recorded |
 | Birth Date | Date; age is calculated from it |
-| Weight (lbs) | Greater than 0, at most 5000 |
+| Weight (lbs) | Greater than 0, at most 5000; a weight of 0 is refused. Shows the most recent weighing. Typing a weight for a new animal saves it as its first weighing, dated today; typing a different weight when editing saves a new weighing dated today. Clearing the field does not delete any weighing (delete weighings from the weight history instead) |
 | Last Calving Date | Date. For a new cow it is saved as her first calving record. After that it is read-only and always shows her most recent calving record |
 | Expected Calving Date | Date. Filled in when a breeding is recorded (see Breeding records); you can still change it |
 | Current Medications | Up to 500 characters |
@@ -73,6 +73,20 @@ Open **Breeding History** in the sidebar, or the **Breeding** tab in a cow's det
 - **Edit or delete** breedings and checks with the buttons on their rows. Deleting a breeding keeps its checks. The search box narrows both tables by cow, sire, technician or notes.
 
 Deleting a cow deletes her breedings and pregnancy checks.
+
+## Weights
+
+Open **Weights** in the sidebar, or the **Weight history** tab in an animal's details (the eye button). Weights are in pounds (lbs).
+
+- **Record weights for several animals at once**: in Record Weights, set the weighing date (today by default), then pick an animal and type its weight on each row. Add Row adds a row; Add All Animals adds a row for every animal not listed yet. Rows left empty are skipped. Choose Save Weights: every row that can be saved is saved, and the rows that can't (no animal, a weight of 0 or over 5000, the same animal twice) stay in the form with the reason in red, so you can fix them and save again. The line under the form says how many were saved.
+- **Record one weight**: Record One Weight on the Weights page, or Record weight in the animal's Weight history tab.
+- **Weight history** on the Weights page lists every weighing, newest first, with the change since that animal's previous weighing and the average daily gain over those days. Search by cow number, name or notes.
+- **The Weight history tab** shows the current weight, the number of weighings, the average daily gain (ADG) from the first to the last weighing, a chart of weight over time (hover a point to see its value), and each weighing with its change since the one before.
+- **Edit or delete** a weighing with the buttons on its row.
+
+An animal's weight is always its most recent weighing (latest date; for two on the same date, the one recorded last). Recording an older weighing adds history without changing it, and deleting the latest weighing brings back the previous one. Deleting an animal deletes its weighings.
+
+Average daily gain is the weight change divided by the number of days between two weighings, in lbs/day; a loss shows as a negative number. Two weighings on the same day have no daily rate.
 
 ## Settings and password
 

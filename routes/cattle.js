@@ -2,7 +2,8 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const { pool } = require('../db');
 const { requireAuth, validate } = require('../middleware/auth');
-const { withTransaction, httpError } = require('../lib/records');
+const { withTransaction, httpError, latestPastDate } = require('../lib/records');
+const { optionalWeightRule, serverToday, sameWeight, syncWeight, insertWeighing } = require('../lib/weights');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -35,7 +36,9 @@ const rules = [
   body('birthDate').optional({ values: 'falsy' }).isISO8601(isoDate),
   body('lastCalvingDate').optional({ values: 'falsy' }).isISO8601(isoDate),
   body('expectedCalvingDate').optional({ values: 'falsy' }).isISO8601(isoDate),
-  body('weight').optional({ values: 'falsy' }).isFloat({ gt: 0, max: 5000 }).withMessage('Invalid weight'),
+  optionalWeightRule('weight'), // '' or null means no weight; 0 is refused (lib/weights.js)
+  body('weightDate').optional({ values: 'falsy' }).isISO8601(isoDate).withMessage('Enter a valid weighing date').bail()
+    .custom((v) => String(v).slice(0, 10) <= latestPastDate()).withMessage('The weighing date cannot be in the future'),
   body('medications').optional({ values: 'falsy' }).isString().isLength({ max: 500 }),
   body('healthStatus').optional({ values: 'falsy' }).isIn(['healthy', 'under_treatment', 'quarantine', 'pregnant']),
   body('notes').optional({ values: 'falsy' }).isString().isLength({ max: 2000 }),
@@ -48,6 +51,7 @@ const fields = (b) => [
 ];
 
 const LAST_CALVING_FIELD = 5; // position of lastCalvingDate in fields()
+const WEIGHT_FIELD = 4; // position of weight in fields()
 
 router.get('/', async (req, res) => {
   const { rows } = await pool.query(
@@ -74,6 +78,13 @@ async function createCattle(db, session, data) {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
     [session.userId, ...fields(data)]
   );
+  // A weight given with a new animal becomes its first weighing (dated `weightDate`, else today),
+  // so cattle.weight always equals the newest weighing (see lib/weights.js).
+  if (rows[0].weight != null) {
+    await insertWeighing(db, {
+      cattleId: rows[0].id, ownerId: session.userId, date: data.weightDate || serverToday(), weight: rows[0].weight,
+    });
+  }
   return rows[0];
 }
 
@@ -96,16 +107,27 @@ router.post('/', rules, validate, async (req, res) => {
 });
 
 // lastCalvingDate is not updated here: it follows the animal's calving events.
+// weight follows the weighings too: a weight that differs from the current one is recorded as a new
+// weighing dated `weightDate` (else today); the same weight, or none, leaves the weighings alone.
 router.put('/:id', param('id').isUUID(), rules, validate, async (req, res) => {
-  const { rows } = await pool.query(
-    `UPDATE cattle SET tag_number=$3, name_breed=$4, gender=$5, birth_date=$6, weight=$7,
-       expected_calving_date=$8, medications=$9, health_status=$10,
-       notes=$11, updated_at=now()
-     WHERE id=$1 AND owner_id=$2 RETURNING *`,
-    [req.params.id, req.session.userId, ...fields(req.body).filter((_, i) => i !== LAST_CALVING_FIELD)]
-  );
-  if (!rows.length) return res.status(404).json({ error: 'Cattle not found' });
-  res.json(toApi(rows[0]));
+  const row = await withTransaction(async (db) => {
+    const { rows } = await db.query(
+      `UPDATE cattle SET tag_number=$3, name_breed=$4, gender=$5, birth_date=$6,
+         expected_calving_date=$7, medications=$8, health_status=$9,
+         notes=$10, updated_at=now()
+       WHERE id=$1 AND owner_id=$2 RETURNING *`,
+      [req.params.id, req.session.userId, ...fields(req.body).filter((_, i) => i !== LAST_CALVING_FIELD && i !== WEIGHT_FIELD)]
+    );
+    if (!rows.length) throw httpError(404, 'Cattle not found');
+    const weight = orNull(req.body.weight);
+    if (weight == null || sameWeight(weight, rows[0].weight)) return rows[0];
+    await insertWeighing(db, {
+      cattleId: rows[0].id, ownerId: req.session.userId, date: req.body.weightDate || serverToday(), weight,
+    });
+    await syncWeight(db, rows[0].id);
+    return (await db.query('SELECT * FROM cattle WHERE id = $1', [rows[0].id])).rows[0];
+  });
+  res.json(toApi(row));
 });
 
 router.delete('/:id', param('id').isUUID(), validate, async (req, res) => {
