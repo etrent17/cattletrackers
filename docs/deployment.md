@@ -51,6 +51,8 @@ Without the script (for example in a Portainer-style stack), use [`deploy/docker
 
 Outside Docker (`npm start`), the app also looks for a free port: if `PORT` (default 3000) is taken it uses the next free one and logs which.
 
+**Health status.** The image has a built-in health check (`/api/health` on `127.0.0.1`), so Docker, Compose and Portainer show the app as *healthy* once it answers and PostgreSQL is reachable, and *unhealthy* if the database is down. Images built before 2026-11-21 checked `http://localhost:3000`, which on IPv6-enabled hosts resolves to `::1` inside the Alpine container while the app listened on IPv4 only, so the app worked but was reported unhealthy. Pull the current image (`./start.sh` does) to fix that.
+
 **Access.** New GitHub packages start private. Either the repository owner makes the package public (GitHub → the repository's Packages → `cattletrackers` → Package settings → Change visibility), or each person pulling signs in once with a personal access token that has the `read:packages` scope: `docker login ghcr.io -u <github-username>`. Repository collaborators can pull because the package inherits the repository's access.
 
 ## Manual

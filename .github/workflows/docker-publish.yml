@@ -58,7 +58,7 @@ jobs:
 
       - name: Smoke test the image
         run: |
-          docker run -d --name app --network host \
+          docker run -d --name app --network host --health-interval=5s --health-start-period=5s \
             -e PORT=3000 \
             -e DATABASE_URL=postgres://cattle:cattle@localhost:5432/cattle \
             -e SESSION_SECRET=ci-only-secret \
@@ -73,6 +73,20 @@ jobs:
           curl -fsS -o /dev/null http://localhost:3000/login.html
           curl -fsS -X POST -c jar http://localhost:3000/api/auth/demo | grep -q '"user"'
           test "$(curl -fsS -b jar http://localhost:3000/api/cattle | grep -o '"tagNumber"' | wc -l)" -ge 8
+          # Inside the container, as Docker's health check sees it. The runner has IPv6, so
+          # localhost can resolve to ::1 there: the app must answer on both families.
+          docker exec app wget -qO- -T 4 http://localhost:3000/api/health
+          docker exec app wget -qO- -T 4 'http://[::1]:3000/api/health'
+          docker exec app wget -qO- -T 4 http://127.0.0.1:3000/api/health
+          echo
+          for i in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' app)
+            [ "$status" = healthy ] && break
+            [ "$status" = unhealthy ] && break
+            sleep 2
+          done
+          echo "Docker health status: $status"
+          test "$status" = healthy
           echo "Smoke test passed"
 
       - name: App logs

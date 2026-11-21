@@ -9,4 +9,8 @@ COPY . .
 
 USER node
 EXPOSE 3000
+# 127.0.0.1, not localhost: in Alpine, localhost can resolve to ::1 first.
+# /api/health answers 503 when PostgreSQL is unreachable, which marks the container unhealthy.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- -T 4 "http://127.0.0.1:${PORT:-3000}/api/health" || exit 1
 CMD ["node", "server.js"]

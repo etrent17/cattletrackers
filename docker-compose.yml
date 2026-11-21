@@ -22,7 +22,7 @@ services:
         condition: service_healthy
     healthcheck:
       # /api/health returns 503 when the database is unreachable; wget exits non-zero on that
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- -T 4 http://127.0.0.1:3000/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
