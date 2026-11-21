@@ -2,16 +2,16 @@
 
 | Branch | Phase | Status | Owner | Depends on |
 |---|---|---|---|---|
-| `feature/emil-design` | 5 | Not started | — | 01 to 13 (everything functional) |
+| `feature/emil-design` | 5 | Not started | cbik6 (runs it locally) | 01 to 13 (everything functional) |
 
 ## Goal
-The whole app, including the sign-in page, uses Emil's design.
+One review pass over the whole app, including the sign-in page, with the Emil design skill: find where motion would help and where the look can be improved, then apply those changes.
 
 ## Background
 Design is deliberately done after the app is functional, so screens are restyled once rather than repeatedly. The app currently uses stock Bootstrap 5 (`public/styles.css`, `public/login.css`). Older sign-in hero styles are in git history at `e8d97e1` (`git show e8d97e1:public/styles.css`), in case any of it is useful.
 
 ## Decisions needed before starting
-- [ ] Where Emil's design lives (Figma, a design file, or a repo) and add the link here
+- [x] Emil is a skill the owner runs once in local Claude Code on this branch (decided 2026-11-21); it reviews the design for motion and visual improvements
 - [ ] Keep Bootstrap underneath, or replace it
 
 ## Tasks

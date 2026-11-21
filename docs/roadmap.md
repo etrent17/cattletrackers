@@ -9,24 +9,24 @@ Status key: **Not started** · **In progress** · **In review** (pull request op
 | # | Feature | Branch | Depends on | Status |
 |---|---|---|---|---|
 | **Phase 1: Working prototype** | | | | |
-| 01 | [Fix dashboard and cattle list](progress/01-fix-core-views.md) | `feature/fix-core-views` | none | In review |
-| 02 | [Error handling](progress/02-error-handling.md) | `feature/error-handling` | 01 | In review |
-| 03 | [Escape user input](progress/03-escape-user-input.md) | `feature/escape-user-input` | 01 | In review |
-| 04 | [Automated tests and CI](progress/04-automated-tests.md) | `feature/automated-tests` | 01 | In review |
+| 01 | [Fix dashboard and cattle list](progress/01-fix-core-views.md) | `feature/fix-core-views` | none | Done |
+| 02 | [Error handling](progress/02-error-handling.md) | `feature/error-handling` | 01 | Done |
+| 03 | [Escape user input](progress/03-escape-user-input.md) | `feature/escape-user-input` | 01 | Done |
+| 04 | [Automated tests and CI](progress/04-automated-tests.md) | `feature/automated-tests` | 01 | Done |
 | **Phase 2: Replace placeholders** | | | | |
-| 05 | [Settings and account](progress/05-settings-cleanup.md) | `feature/settings-cleanup` | 01 | In review |
-| 06 | [User management screen](progress/06-user-management-ui.md) | `feature/user-management-ui` | 01 | In review |
-| 07 | [Calving records](progress/07-calving-records.md) | `feature/calving-records` | 01, 02 | In review |
-| 08 | [Medical records](progress/08-medical-records.md) | `feature/medical-records` | 07 (pattern) | In review |
-| 09 | [Breeding records](progress/09-breeding-records.md) | `feature/breeding-records` | 07 (pattern) | In review |
-| 10 | [Weight tracking](progress/10-weight-tracking.md) | `feature/weight-tracking` | 07 (pattern) | In review |
-| 11 | [Financial records](progress/11-financial-records.md) | `feature/financial-records` | 01, 02 | In review |
-| 12 | [Performance and health reports](progress/12-reports.md) | `feature/reports` | 07, 08, 09, 10 | In review |
+| 05 | [Settings and account](progress/05-settings-cleanup.md) | `feature/settings-cleanup` | 01 | Done |
+| 06 | [User management screen](progress/06-user-management-ui.md) | `feature/user-management-ui` | 01 | Done |
+| 07 | [Calving records](progress/07-calving-records.md) | `feature/calving-records` | 01, 02 | Done |
+| 08 | [Medical records](progress/08-medical-records.md) | `feature/medical-records` | 07 (pattern) | Done |
+| 09 | [Breeding records](progress/09-breeding-records.md) | `feature/breeding-records` | 07 (pattern) | Done |
+| 10 | [Weight tracking](progress/10-weight-tracking.md) | `feature/weight-tracking` | 07 (pattern) | Done |
+| 11 | [Financial records](progress/11-financial-records.md) | `feature/financial-records` | 01, 02 | Done |
+| 12 | [Performance and health reports](progress/12-reports.md) | `feature/reports` | 07, 08, 09, 10 | Done |
 | **Phase 3: Deployment** | | | | |
 | 13 | [Deployment hardening](progress/13-deploy-hardening.md) | `feature/deploy-hardening` | none | Done |
-| 17 | [Docker image package](progress/17-docker-package.md) | `feature/docker-package` | 13 | In review |
+| 17 | [Docker image package](progress/17-docker-package.md) | `feature/docker-package` | 13 | Done |
 | **Phase 4: Later** | | | | |
-| 14 | [Offline editing](progress/14-offline-editing.md) | `feature/offline-editing` | 02, 04 | Not started |
+| 14 | [Offline editing](progress/14-offline-editing.md) | `feature/offline-editing` | 02, 04 | In review |
 | **Phase 5: Design (after everything is functional)** | | | | |
 | 15 | [Apply Emil's design](progress/15-emil-design.md) | `feature/emil-design` | 01 to 13 | Not started |
 | 16 | [Impeccable polish pass](progress/16-impeccable-polish.md) | `feature/impeccable-polish` | 15 | Not started |
