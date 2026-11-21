@@ -14,13 +14,13 @@ Status key: **Not started** · **In progress** · **In review** (pull request op
 | 03 | [Escape user input](progress/03-escape-user-input.md) | `feature/escape-user-input` | 01 | In review |
 | 04 | [Automated tests and CI](progress/04-automated-tests.md) | `feature/automated-tests` | 01 | In review |
 | **Phase 2: Replace placeholders** | | | | |
-| 05 | [Settings and account](progress/05-settings-cleanup.md) | `feature/settings-cleanup` | 01 | Not started |
-| 06 | [User management screen](progress/06-user-management-ui.md) | `feature/user-management-ui` | 01 | Not started |
-| 07 | [Calving records](progress/07-calving-records.md) | `feature/calving-records` | 01, 02 | Not started |
+| 05 | [Settings and account](progress/05-settings-cleanup.md) | `feature/settings-cleanup` | 01 | In review |
+| 06 | [User management screen](progress/06-user-management-ui.md) | `feature/user-management-ui` | 01 | In review |
+| 07 | [Calving records](progress/07-calving-records.md) | `feature/calving-records` | 01, 02 | In review |
 | 08 | [Medical records](progress/08-medical-records.md) | `feature/medical-records` | 07 (pattern) | Not started |
 | 09 | [Breeding records](progress/09-breeding-records.md) | `feature/breeding-records` | 07 (pattern) | Not started |
 | 10 | [Weight tracking](progress/10-weight-tracking.md) | `feature/weight-tracking` | 07 (pattern) | Not started |
-| 11 | [Financial records](progress/11-financial-records.md) | `feature/financial-records` | 01, 02 | Not started |
+| 11 | [Financial records](progress/11-financial-records.md) | `feature/financial-records` | 01, 02 | In review |
 | 12 | [Performance and health reports](progress/12-reports.md) | `feature/reports` | 07, 08, 09, 10 | Not started |
 | **Phase 3: Deployment** | | | | |
 | 13 | [Deployment hardening](progress/13-deploy-hardening.md) | `feature/deploy-hardening` | none | Done |
