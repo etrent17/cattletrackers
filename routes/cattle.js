@@ -24,13 +24,16 @@ const toApi = (r) => ({
   updatedAt: r.updated_at,
 });
 
+// strict: reject well-formed but impossible dates (2026-02-30), which PostgreSQL would refuse with a 500
+const isoDate = { strict: true };
+
 const rules = [
   body('tagNumber').isString().trim().isLength({ min: 1, max: 25 }).withMessage('Invalid cow number'),
   body('nameBreed').optional({ values: 'falsy' }).isString().isLength({ max: 100 }),
   body('gender').optional({ values: 'falsy' }).isIn(['female', 'male']),
-  body('birthDate').optional({ values: 'falsy' }).isISO8601(),
-  body('lastCalvingDate').optional({ values: 'falsy' }).isISO8601(),
-  body('expectedCalvingDate').optional({ values: 'falsy' }).isISO8601(),
+  body('birthDate').optional({ values: 'falsy' }).isISO8601(isoDate),
+  body('lastCalvingDate').optional({ values: 'falsy' }).isISO8601(isoDate),
+  body('expectedCalvingDate').optional({ values: 'falsy' }).isISO8601(isoDate),
   body('weight').optional({ values: 'falsy' }).isFloat({ gt: 0, max: 5000 }).withMessage('Invalid weight'),
   body('medications').optional({ values: 'falsy' }).isString().isLength({ max: 500 }),
   body('healthStatus').optional({ values: 'falsy' }).isIn(['healthy', 'under_treatment', 'quarantine', 'pregnant']),

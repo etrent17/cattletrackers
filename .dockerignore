@@ -8,3 +8,6 @@ Dockerfile
 docker-compose.yml
 backups
 docs
+test
+e2e
+.github

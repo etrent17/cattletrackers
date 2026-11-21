@@ -17,9 +17,6 @@ It says offline storage uses `localStorage` and offers a sample-herd reset that 
 The API exists; there is no interface.
 
 
-### 13. No automated tests
-`npm test` prints an error and exits.
-
 ## Resolved
 
 - `getStatistics()` was missing from `CattleService`. Added in `e8d97e1`.
@@ -33,6 +30,7 @@ The API exists; there is no interface.
 - (11) Health check ignored the database: `/api/health` now runs `SELECT 1` and returns 503 when PostgreSQL is unreachable. Fixed on `feature/deploy-hardening`.
 - **8. Startup failures were silent.** Listeners are attached before the herd loads; a failed load or unreachable server shows an error banner with Retry, and `app.js` catches a failing start-up. Fixed on `feature/error-handling`, verified in a browser (server stopped, requests aborted or answered 500).
 - **9. Delete had no error handling.** A failed delete shows an error toast; deleting a record already deleted in another tab says so and refreshes the list. Fixed on `feature/error-handling`, verified in a browser.
+- (13) No automated tests: `npm test` now runs unit and API tests against PostgreSQL, `npm run test:e2e` runs a browser smoke test, and GitHub Actions runs both on every push and pull request. Added on `feature/automated-tests`; the workflow passed on GitHub for the branch push (run 44942939463).
 
 ## Note on login graphics
 

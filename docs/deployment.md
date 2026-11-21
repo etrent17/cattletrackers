@@ -119,7 +119,7 @@ Set `APP_BIND=127.0.0.1` so the app's own port is not exposed to the network, th
 
 ### Notes
 
-- The app trusts one proxy hop (`trust proxy` is 1 in `server.js`) and uses the proxy's `X-Forwarded-Proto` header to know a request arrived over HTTPS. Caddy sets that header. Any other proxy (nginx, Traefik) must set it as well, or the secure cookie is never sent and login fails.
+- The app trusts one proxy hop (`trust proxy` is 1 in `app.js`) and uses the proxy's `X-Forwarded-Proto` header to know a request arrived over HTTPS. Caddy sets that header. Any other proxy (nginx, Traefik) must set it as well, or the secure cookie is never sent and login fails.
 - HSTS tells browsers to refuse plain HTTP for the whole `HSTS_MAX_AGE`, and that cannot be undone from the server. To try it out, start with `HSTS_MAX_AGE=300` and raise it once HTTPS has been working for a while. The header does not cover subdomains.
 - If sign-in fails with "the session was not saved", `COOKIE_SECURE=true` is set while the site is reached over plain HTTP.
 
