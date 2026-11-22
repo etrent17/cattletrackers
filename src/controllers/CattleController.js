@@ -350,15 +350,15 @@ export class CattleController {
         </div>
       </div>
       <div class="animal-detail-grid">
-        <div class="animal-detail-item"><span class="animal-detail-label">Name / Breed</span>${escapeHtml(c.nameBreed || "—")}</div>
-        <div class="animal-detail-item"><span class="animal-detail-label">Gender</span>${formatGender(c.gender)}</div>
-        <div class="animal-detail-item"><span class="animal-detail-label">Birth Date / Age</span>${escapeHtml(c.birthDate || "—")} (${escapeHtml(calculateAge(c.birthDate))})</div>
-        <div class="animal-detail-item"><span class="animal-detail-label">Weight</span>${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</div>
-        <div class="animal-detail-item"><span class="animal-detail-label">Last Calving</span>${escapeHtml(c.lastCalvingDate || "N/A")}</div>
-        <div class="animal-detail-item"><span class="animal-detail-label">Expected Calving</span>${escapeHtml(c.expectedCalvingDate || "N/A")}</div>
-        <div class="animal-detail-item"><span class="animal-detail-label">Current Medications</span>${escapeHtml(c.medications || "None")}</div>
-        <div class="animal-detail-item"><span class="animal-detail-label">Withdrawal Period</span>${withdrawalBadge(c) || escapeHtml(c.withdrawalUntil ? `Ended ${c.withdrawalUntil}` : "None")}</div>
-        <div class="animal-detail-item full-span"><span class="animal-detail-label">Notes</span>${escapeHtml(c.notes || "No notes recorded.")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Name / Breed:</span> ${escapeHtml(c.nameBreed || "—")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Gender:</span> ${formatGender(c.gender)}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Birth Date / Age:</span> ${escapeHtml(c.birthDate || "—")} (${escapeHtml(calculateAge(c.birthDate))})</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Weight:</span> ${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Last Calving:</span> ${escapeHtml(c.lastCalvingDate || "N/A")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Expected Calving:</span> ${escapeHtml(c.expectedCalvingDate || "N/A")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Current Medications:</span> ${escapeHtml(c.medications || "None")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Withdrawal Period:</span> ${withdrawalBadge(c) || escapeHtml(c.withdrawalUntil ? `Ended ${c.withdrawalUntil}` : "None")}</div>
+        <div class="animal-detail-item full-span"><span class="animal-detail-label">Notes:</span> ${escapeHtml(c.notes || "No notes recorded.")}</div>
       </div>
       ${recordsAvailable ? "" : `<p class="text-muted small mt-3 mb-0" id="cow-details-offline-note">${
         isOnline()
