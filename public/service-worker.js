@@ -1,7 +1,7 @@
 // The app shell, so the page opens without a connection. Cattle data is NOT cached here:
 // requests to /api/ are never intercepted. The herd's offline copy lives in IndexedDB
 // (src/services/OfflineStore.js).
-const CACHE_NAME = 'cattle-trackers-v17';
+const CACHE_NAME = 'cattle-trackers-v18';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -16,6 +16,7 @@ const urlsToCache = [
   '/src/services/OfflineStore.js',
   '/src/services/SyncEngine.js',
   '/src/utils/connectivity.js',
+  '/src/utils/mobileShell.js',
   '/src/views/SyncView.js',
   '/src/controllers/CalvingController.js',
   '/src/services/CalvingService.js',
