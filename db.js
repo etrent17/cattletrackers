@@ -13,6 +13,7 @@ async function initSchema() {
   await coreSchema();
   await calvingSchema();
   await treatmentSchema();
+  await require('./lib/treatment-details').initTreatmentDetails(pool);
   await breedingSchema();
   await initTransactionsSchema();
   await weighingSchema();
