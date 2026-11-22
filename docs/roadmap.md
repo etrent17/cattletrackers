@@ -27,6 +27,7 @@ Status key: **Not started** · **In progress** · **In review** (pull request op
 | 17 | [Docker image package](progress/17-docker-package.md) | `feature/docker-package` | 13 | Done |
 | **Phase 4: Later** | | | | |
 | 14 | [Offline editing](progress/14-offline-editing.md) | `feature/offline-editing` | 02, 04 | In review |
+| 18 | Cow GPS map: a map of the field, with an option to add a GPS tracker to each cow | `feature/cow-gps-map` | 01 | Not started |
 | **Phase 5: Design (after everything is functional)** | | | | |
 | 15 | [Apply Emil's design](progress/15-emil-design.md) | `feature/emil-design` | 01 to 13 | Not started |
 | 16 | [Impeccable polish pass](progress/16-impeccable-polish.md) | `feature/impeccable-polish` | 15 | Not started |
