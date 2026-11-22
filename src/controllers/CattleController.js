@@ -9,6 +9,7 @@ import { SettingsView } from "../views/SettingsView.js";
 import { calculateAge, formatGender, formatHealthStatus } from "../utils/DateHelpers.js";
 import { hideErrorBanner, showErrorBanner, showToast } from "../utils/feedback.js";
 import { escapeHtml } from "../utils/escapeHtml.js";
+import { initMobileShell, syncMobileNav } from "../utils/mobileShell.js";
 import { CalvingController } from "./CalvingController.js";
 import { TreatmentController } from "./TreatmentController.js";
 import { withdrawalBadge } from "../views/TreatmentView.js";
@@ -82,7 +83,32 @@ export class CattleController {
     return true;
   }
 
+  openAddModal() {
+    this.editingId = null;
+    this.reapplying = null;
+    this.formView.resetForm();
+    this.formView.openModal(false);
+  }
+
   setupEventListeners() {
+    initMobileShell({
+      onNavigate: (view) => this.switchView(view),
+      onAddAnimal: () => this.openAddModal(),
+      onFilterHealthy: () => {
+        const statusEl = document.getElementById("filter-status");
+        if (statusEl) statusEl.value = "healthy";
+        this.switchView("cattle");
+      },
+      onResetCattleFilters: () => {
+        const searchEl = document.getElementById("search-cattle");
+        const statusEl = document.getElementById("filter-status");
+        if (searchEl) searchEl.value = "";
+        if (statusEl) statusEl.value = "all";
+        this.renderCattleList();
+      },
+    });
+    syncMobileNav(this.currentView);
+
     // Top navbar & sidebar navigation links
     document.querySelectorAll("[data-view]").forEach((link) => {
       link.addEventListener("click", (e) => {
@@ -108,12 +134,7 @@ export class CattleController {
     });
 
     // Open Add New Cow Modal
-    document.getElementById("open-add-modal-btn")?.addEventListener("click", () => {
-      this.editingId = null;
-      this.reapplying = null;
-      this.formView.resetForm();
-      this.formView.openModal(false);
-    });
+    document.getElementById("open-add-modal-btn")?.addEventListener("click", () => this.openAddModal());
 
     // Save / Update Cow Form
     document.getElementById("cattle-form")?.addEventListener("submit", async (e) => {
@@ -134,7 +155,13 @@ export class CattleController {
       const deleteBtn = e.target.closest(".btn-delete");
 
       if (editBtn) {
-        this.handleEdit(editBtn.dataset.id);
+        const detailsEl = document.getElementById("viewCowModal");
+        if (detailsEl?.classList.contains("show")) {
+          detailsEl.addEventListener("hidden.bs.modal", () => this.handleEdit(editBtn.dataset.id), { once: true });
+          bootstrap.Modal.getInstance(detailsEl)?.hide();
+        } else {
+          this.handleEdit(editBtn.dataset.id);
+        }
       } else if (viewBtn) {
         this.handleInspect(viewBtn.dataset.id);
       } else if (deleteBtn) {
@@ -146,10 +173,11 @@ export class CattleController {
   switchView(viewName) {
     this.currentView = viewName;
 
-    // Update active state on sidebar & navbar
+    // Update active state on sidebar & mobile bottom navigation
     document.querySelectorAll("[data-view]").forEach((el) => {
       el.classList.toggle("active", el.dataset.view === viewName);
     });
+    syncMobileNav(viewName);
 
     document.querySelectorAll(".app-view").forEach((sec) => sec.classList.remove("active"));
     Object.values(this.recordPages).forEach((page) => page.hide());
@@ -206,12 +234,13 @@ export class CattleController {
     }
   }
 
-  // Renders the All Cattle table,
-  // narrowed by the search box and status filter.
+  // Renders the All Cattle table, narrowed by the search box and status filter.
   renderCattleList() {
     const query = document.getElementById("search-cattle")?.value || "";
     const status = document.getElementById("filter-status")?.value || "all";
-    this.listView.renderList(this.cattleService.searchCattle(query, status), "All Cattle Records");
+    const total = this.cattleService.getAllCattle().length;
+    const filtered = Boolean(query.trim()) || status !== "all";
+    this.listView.renderList(this.cattleService.searchCattle(query, status), "All Cattle Records", { total, filtered });
   }
 
   renderSecondaryView(viewName) {
@@ -295,8 +324,13 @@ export class CattleController {
       </li>`;
     const paneClass = (tabId) => `tab-pane ${tabId === activeTab ? "show active" : ""}`;
 
-    document.getElementById("viewCowModalTitle").textContent = `${c.nameBreed} (${c.tagNumber})`;
+    const displayTitle = c.nameBreed ? `${c.nameBreed} (${c.tagNumber})` : c.tagNumber;
+    document.getElementById("viewCowModalTitle").textContent = displayTitle;
     const bodyEl = document.getElementById("viewCowModalBody");
+    const quickRecordBtns = recordsAvailable
+      ? `<button type="button" class="btn btn-sm btn-outline-success btn-treatment-add" data-cattle-id="${escapeHtml(c.id)}">Record treatment</button>
+         <button type="button" class="btn btn-sm btn-outline-success btn-weight-add" data-cattle-id="${escapeHtml(c.id)}">Record weight</button>`
+      : "";
     bodyEl.innerHTML = `
       <ul class="nav nav-tabs mb-3" role="tablist">
         ${tabButton("details", "Details")}
@@ -304,19 +338,28 @@ export class CattleController {
       </ul>
       <div class="tab-content">
       <div class="${paneClass("details")}" id="cow-tab-details" role="tabpanel" aria-labelledby="cow-tab-btn-details">
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item"><strong>Cow ID:</strong> ${escapeHtml(c.tagNumber)}</li>
-        <li class="list-group-item"><strong>Name / Breed:</strong> ${escapeHtml(c.nameBreed || "—")}</li>
-        <li class="list-group-item"><strong>Gender:</strong> ${formatGender(c.gender)}</li>
-        <li class="list-group-item"><strong>Birth Date / Age:</strong> ${escapeHtml(c.birthDate || "—")} (${escapeHtml(calculateAge(c.birthDate))})</li>
-        <li class="list-group-item"><strong>Weight:</strong> ${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</li>
-        <li class="list-group-item"><strong>Last Calving:</strong> ${escapeHtml(c.lastCalvingDate || "N/A")}</li>
-        <li class="list-group-item"><strong>Expected Calving:</strong> ${escapeHtml(c.expectedCalvingDate || "N/A")}</li>
-        <li class="list-group-item"><strong>Current Medications:</strong> ${escapeHtml(c.medications || "None")}</li>
-        <li class="list-group-item"><strong>Withdrawal Period:</strong> ${withdrawalBadge(c) || escapeHtml(c.withdrawalUntil ? `Ended ${c.withdrawalUntil}` : "None")}</li>
-        <li class="list-group-item"><strong>Status:</strong> <span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span></li>
-        <li class="list-group-item"><strong>Notes:</strong> ${escapeHtml(c.notes || "No notes recorded.")}</li>
-      </ul>
+      <div class="animal-profile-banner">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="badge badge-cow fs-6">${escapeHtml(c.tagNumber)}</span>
+          <span class="badge ${escapeHtml(statusInfo.badgeClass)}">${escapeHtml(statusInfo.label)}</span>
+          ${withdrawalBadge(c)}
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-sm btn-outline-primary btn-edit" data-id="${escapeHtml(c.id)}">Edit</button>
+          ${quickRecordBtns}
+        </div>
+      </div>
+      <div class="animal-detail-grid">
+        <div class="animal-detail-item"><span class="animal-detail-label">Name / Breed</span>${escapeHtml(c.nameBreed || "—")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Gender</span>${formatGender(c.gender)}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Birth Date / Age</span>${escapeHtml(c.birthDate || "—")} (${escapeHtml(calculateAge(c.birthDate))})</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Weight</span>${c.weight ? `${escapeHtml(c.weight)} lbs` : "—"}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Last Calving</span>${escapeHtml(c.lastCalvingDate || "N/A")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Expected Calving</span>${escapeHtml(c.expectedCalvingDate || "N/A")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Current Medications</span>${escapeHtml(c.medications || "None")}</div>
+        <div class="animal-detail-item"><span class="animal-detail-label">Withdrawal Period</span>${withdrawalBadge(c) || escapeHtml(c.withdrawalUntil ? `Ended ${c.withdrawalUntil}` : "None")}</div>
+        <div class="animal-detail-item full-span"><span class="animal-detail-label">Notes</span>${escapeHtml(c.notes || "No notes recorded.")}</div>
+      </div>
       ${recordsAvailable ? "" : `<p class="text-muted small mt-3 mb-0" id="cow-details-offline-note">${
         isOnline()
           ? "This animal has not synced yet. Its calving, breeding, weight, treatment and financial history will be available once it has."
