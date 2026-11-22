@@ -23,7 +23,8 @@ app.use(
         scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
         fontSrc: ["'self'", 'https://cdnjs.cloudflare.com'],
-        imgSrc: ["'self'", 'data:'],
+        // Map page (feature 18): OpenStreetMap tiles, and the icons of the Leaflet drawing toolbar.
+        imgSrc: ["'self'", 'data:', 'https://tile.openstreetmap.org', 'https://cdn.jsdelivr.net'],
         // The service worker fetches the CDN files itself to keep them for offline use; a worker's
         // fetch() is checked against connect-src whatever the file is (feature 14).
         connectSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
