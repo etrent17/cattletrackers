@@ -53,25 +53,12 @@ async function coreSchema() {
 
 // --- Farms (multi-tenant) -------------------------------------------------------------------
 // A user is an account. A farm is the tenant. Membership is separate, so signup does not create
-// a farm. cattle.farm_id is the herd boundary; owner_id is who recorded the row. Deleting a user
-// must not delete the herd. Deleting a farm does.
+// a farm. cattle.farm_id is the herd boundary; owner_id is who recorded the row.
+// Until the routes read farm_id, owner_id still cascades: deleting a user deletes their records.
+// Changing owner_id to ON DELETE SET NULL (so a user's deletion keeps the herd) is deferred to the
+// change that moves the routes to farm_id, together with the delete tests.
 // The per-owner tag index stays until inserts set farm_id. Dropping it now would let the current
 // API save two animals with the same tag.
-const OWNER_TABLES = [
-  'cattle',
-  'calving_events',
-  'breeding_events',
-  'pregnancy_checks',
-  'treatments',
-  'transactions',
-  'weighings',
-];
-
-function quoteIdent(name) {
-  if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error('unexpected identifier: ' + name);
-  return '"' + name + '"';
-}
-
 async function farmSchema() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS farms (
@@ -129,33 +116,6 @@ async function farmSchema() {
     throw err;
   } finally {
     client.release();
-  }
-
-  // owner_id used to cascade, which deleted the herd with the user. Set null instead.
-  // A DO block cannot take a bound parameter, and regclass::text is schema-qualified, so match
-  // pg_class.relname here and alter from JavaScript. confdeltype = 'c' means ON DELETE CASCADE,
-  // so a second start finds nothing.
-  const { rows: cascading } = await pool.query(`
-    SELECT c.conname, cl.relname AS tbl
-    FROM pg_constraint c
-    JOIN pg_class cl ON cl.oid = c.conrelid
-    JOIN pg_namespace n ON n.oid = cl.relnamespace
-    JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
-    WHERE c.contype = 'f'
-      AND c.confrelid = 'users'::regclass
-      AND a.attname = 'owner_id'
-      AND c.confdeltype = 'c'
-      AND n.nspname = 'public'
-      AND cl.relname = ANY ($1::text[])
-  `, [OWNER_TABLES]);
-  for (const fk of cascading) {
-    const table = quoteIdent(fk.tbl);
-    const constraint = quoteIdent(fk.conname);
-    await pool.query('ALTER TABLE ' + table + ' ALTER COLUMN owner_id DROP NOT NULL');
-    await pool.query('ALTER TABLE ' + table + ' DROP CONSTRAINT ' + constraint);
-    await pool.query(
-      'ALTER TABLE ' + table + ' ADD CONSTRAINT ' + constraint + ' FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL'
-    );
   }
 }
 // --- end farms ------------------------------------------------------------------------------
@@ -335,7 +295,8 @@ async function cleanupDemoUsers(hours = 4) {
       await client.query('COMMIT');
       return 0;
     }
-    // The farm cascade removes the herd. owner_id no longer does.
+    // Remove the demo users' farms first (their cattle go with them), then the users. Deleting a
+    // user still cascades to every row they own.
     await client.query(
       `DELETE FROM farms f
        WHERE f.id IN (SELECT farm_id FROM farm_members WHERE user_id = ANY($1::int[]))
@@ -346,8 +307,6 @@ async function cleanupDemoUsers(hours = 4) {
          )`,
       [ids]
     );
-    await client.query('DELETE FROM cattle WHERE owner_id = ANY($1::int[])', [ids]);
-    await client.query('DELETE FROM transactions WHERE owner_id = ANY($1::int[])', [ids]);
     const result = await client.query('DELETE FROM users WHERE id = ANY($1::int[])', [ids]);
     await client.query('COMMIT');
     return result.rowCount;
