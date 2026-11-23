@@ -21,7 +21,15 @@ describe('GET /api/health', () => {
 describe('first-run setup', () => {
   test('a fresh database asks for setup', async () => {
     const res = await request(app).get('/api/auth/status').expect(200);
-    assert.deepEqual(res.body, { setupRequired: true, demoEnabled: false, authenticated: false, user: null });
+    assert.deepEqual(res.body, {
+      setupRequired: true,
+      demoEnabled: false,
+      registrationEnabled: false,
+      authenticated: false,
+      user: null,
+      farms: [],
+      farmId: null,
+    });
   });
 
   test('creates the first admin and signs them in', async () => {
