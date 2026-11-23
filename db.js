@@ -68,8 +68,8 @@ const OWNER_TABLES = [
 ];
 
 function quoteIdent(name) {
-  if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error(`unexpected identifier: ${name}`);
-  return `"${name}"`;
+  if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error('unexpected identifier: ' + name);
+  return '"' + name + '"';
 }
 
 async function farmSchema() {
@@ -151,10 +151,10 @@ async function farmSchema() {
   for (const fk of cascading) {
     const table = quoteIdent(fk.tbl);
     const constraint = quoteIdent(fk.conname);
-    await pool.query(`ALTER TABLE ${table} ALTER COLUMN owner_id DROP NOT NULL`);
-    await pool.query(`ALTER TABLE ${table} DROP CONSTRAINT ${constraint}`);
+    await pool.query('ALTER TABLE ' + table + ' ALTER COLUMN owner_id DROP NOT NULL');
+    await pool.query('ALTER TABLE ' + table + ' DROP CONSTRAINT ' + constraint);
     await pool.query(
-      `ALTER TABLE ${table} ADD CONSTRAINT ${constraint} FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL`
+      'ALTER TABLE ' + table + ' ADD CONSTRAINT ' + constraint + ' FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL'
     );
   }
 }
