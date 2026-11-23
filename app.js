@@ -77,6 +77,7 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/farms', require('./routes/farms'));
 // Event records: the nested router goes before /api/cattle so it sees /api/cattle/:cattleId/<records> first.
 const calvings = require('./routes/calvings');
 app.use('/api/cattle/:cattleId/calvings', calvings.forCattle);
