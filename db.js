@@ -67,6 +67,11 @@ const OWNER_TABLES = [
   'weighings',
 ];
 
+function quoteIdent(name) {
+  if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error(`unexpected identifier: ${name}`);
+  return `"${name}"`;
+}
+
 async function farmSchema() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS farms (
@@ -127,33 +132,31 @@ async function farmSchema() {
   }
 
   // owner_id used to cascade, which deleted the herd with the user. Set null instead.
-  // Guarded by confdeltype = 'c' (ON DELETE CASCADE), so a second start changes nothing.
-  await pool.query(
-    `
-    DO $$
-    DECLARE r record;
-    BEGIN
-      FOR r IN
-        SELECT c.conname, c.conrelid::regclass AS tbl
-        FROM pg_constraint c
-        JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
-        WHERE c.contype = 'f'
-          AND c.confrelid = 'users'::regclass
-          AND a.attname = 'owner_id'
-          AND c.confdeltype = 'c'
-          AND c.conrelid::regclass::text = ANY ($1)
-      LOOP
-        EXECUTE format('ALTER TABLE %s ALTER COLUMN owner_id DROP NOT NULL', r.tbl);
-        EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', r.tbl, r.conname);
-        EXECUTE format(
-          'ALTER TABLE %s ADD CONSTRAINT %I FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL',
-          r.tbl, r.conname
-        );
-      END LOOP;
-    END $$;
-    `,
-    [OWNER_TABLES]
-  );
+  // A DO block cannot take a bound parameter, and regclass::text is schema-qualified, so match
+  // pg_class.relname here and alter from JavaScript. confdeltype = 'c' means ON DELETE CASCADE,
+  // so a second start finds nothing.
+  const { rows: cascading } = await pool.query(`
+    SELECT c.conname, cl.relname AS tbl
+    FROM pg_constraint c
+    JOIN pg_class cl ON cl.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = cl.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
+    WHERE c.contype = 'f'
+      AND c.confrelid = 'users'::regclass
+      AND a.attname = 'owner_id'
+      AND c.confdeltype = 'c'
+      AND n.nspname = 'public'
+      AND cl.relname = ANY ($1::text[])
+  `, [OWNER_TABLES]);
+  for (const fk of cascading) {
+    const table = quoteIdent(fk.tbl);
+    const constraint = quoteIdent(fk.conname);
+    await pool.query(`ALTER TABLE ${table} ALTER COLUMN owner_id DROP NOT NULL`);
+    await pool.query(`ALTER TABLE ${table} DROP CONSTRAINT ${constraint}`);
+    await pool.query(
+      `ALTER TABLE ${table} ADD CONSTRAINT ${constraint} FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL`
+    );
+  }
 }
 // --- end farms ------------------------------------------------------------------------------
 
