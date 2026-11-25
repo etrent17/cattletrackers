@@ -1,6 +1,6 @@
 # Feature Inventory
 
-Based on commit `7fb8152`, reviewed 2026-11-21 from source code only. Every row is **Not tested** until [the testing checklist](testing-checklist.md) is run.
+Based on `main` at commit `d712f9f`, reviewed 2026-11-24. Rows reflect the automated tests listed in the [README](../README.md) and the manual [testing checklist](testing-checklist.md).
 
 Status key: **Implemented** = code is present. **Partial** = some pieces work in code, others missing. **Placeholder** = a screen or label without distinct functionality. **Defective** = a confirmed defect blocks it (see [known issues](known-issues.md)). **Missing** = not in the code.
 
@@ -21,20 +21,20 @@ Status key: **Implemented** = code is present. **Partial** = some pieces work in
 
 | Feature | Where | Status | Notes |
 |---|---|---|---|
-| Add cattle | `FormView.js`, `POST /api/cattle` | Implemented | Form IDs fixed in `7fb8152`; untested |
-| Edit cattle | `FormView.js`, `PUT /api/cattle/:id` | Implemented | Same fix; untested |
+| Add cattle | `FormView.js`, `POST /api/cattle` | Implemented | Form IDs fixed in `7fb8152`; covered by the browser smoke test |
+| Edit cattle | `FormView.js`, `PUT /api/cattle/:id` | Implemented | Same fix |
 | View details modal | `CattleController.handleInspect` | Implemented | |
-| Delete cattle | `routes/cattle.js` | Partial | Delete button exists only in the All Cattle table; that table does not render (see known issues) |
-| Search and status filter | `CattleService.searchCattle` | Defective | Filters run, but the table they render into is not found |
+| Delete cattle | `routes/cattle.js` | Implemented | Delete button in the All Cattle table; covered by the browser smoke test |
+| Search and status filter | `CattleService.searchCattle` | Implemented | |
 | Duplicate cow-number check | client and database | Implemented | Case-insensitive, per owner |
-| Cattle list table | `ListView.js` | Defective | Element IDs do not match `index.html` |
+| Cattle list table | `ListView.js` | Implemented | Element IDs fixed on `feature/fix-core-views` (`0c99c91`) |
 
 ## Dashboard and views
 
 | Feature | Where | Status | Notes |
 |---|---|---|---|
-| Statistics cards | `DashboardView.renderStats` | Defective | `getStatistics()` added in `e8d97e1`, but card IDs do not match |
-| Recent cattle table | `DashboardView.renderRecentTable` | Defective | ID mismatch |
+| Statistics cards | `DashboardView.renderStats` | Implemented | Card IDs fixed on `feature/fix-core-views` (`0c99c91`) |
+| Recent cattle table | `DashboardView.renderRecentTable` | Implemented | ID mismatch fixed on `feature/fix-core-views` (`0c99c91`) |
 | Upcoming events and alerts | `DashboardView.renderUpcomingEvents`, `DashboardView.renderAlerts` | Implemented | Alerts list (`#alerts-list`) under Upcoming Events; each feature owns its alerts. Shows overdue treatments |
 | Scheduled Treatments card | `DashboardView.renderTreatmentsDue`, `TreatmentController` | Implemented | Open treatment follow-ups due within 7 days, overdue included |
 | Medical records | nav item `medical`, `routes/treatments.js`, `TreatmentController` | Implemented | Treatments, vaccinations, vet visits per animal; Upcoming and overdue follow-ups; withdrawal periods with a badge in the cattle tables and details; Treatments tab in the cow details |

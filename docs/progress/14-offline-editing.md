@@ -2,7 +2,7 @@
 
 | Branch | Phase | Status | Owner | Depends on |
 |---|---|---|---|---|
-| `feature/offline-editing` | 4 | In review | agent | 02, 04 |
+| `feature/offline-editing` | 4 | Done | agent | 02, 04 |
 
 ## Goal
 Herd records can be viewed and edited without a connection (for example, out in a barn), and changes sync when the connection returns.
@@ -61,3 +61,4 @@ Decisions made while building (documented in `docs/architecture-and-data.md`, "O
 |---|---|---|
 | 2026-11-21 | agent | Decisions recorded (cattle only; server wins, nothing lost silently). API: client `id` on create, `expectedUpdatedAt` on update and delete. Browser: IndexedDB copy of the herd, outbox with ordered replay, Unsynced changes list, offline banner and indicator fix, online-only pages gated, service worker caches the CDN files (needs `connect-src` in the CSP). Tests: 26 API, 68 unit, 13 browser (one with the real service worker). `npm test` and `npm run test:e2e` pass. Ready for review. |
 | 2026-11-21 | agent | Merged the integration branch again after feature 12 (reports) landed: `CACHE_NAME` moved to v17, report modules kept in `urlsToCache`, report pages are online-only like the other record pages. `npm test` 766 pass, `npm run test:e2e` 119 pass. |
+| 2026-11-24 | agent | Merged to main; status set to Done. The manual verification items under "Not verified" remain open follow-ups. |
