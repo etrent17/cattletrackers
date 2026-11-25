@@ -17,6 +17,7 @@ async function initSchema() {
   await breedingSchema();
   await initTransactionsSchema();
   await weighingSchema();
+  await farmSchema();
 }
 
 async function coreSchema() {
@@ -49,6 +50,75 @@ async function coreSchema() {
       ON cattle (owner_id, lower(tag_number));
   `);
 }
+
+// --- Farms (multi-tenant) -------------------------------------------------------------------
+// A user is an account. A farm is the tenant. Membership is separate, so signup does not create
+// a farm. cattle.farm_id is the herd boundary; owner_id is who recorded the row.
+// Until the routes read farm_id, owner_id still cascades: deleting a user deletes their records.
+// Changing owner_id to ON DELETE SET NULL (so a user's deletion keeps the herd) is deferred to the
+// change that moves the routes to farm_id, together with the delete tests.
+// The per-owner tag index stays until inserts set farm_id. Dropping it now would let the current
+// API save two animals with the same tag.
+async function farmSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS farms (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL CHECK (length(btrim(name)) BETWEEN 1 AND 80),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS farm_members (
+      farm_id INTEGER NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK (role IN ('admin','user')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (farm_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS farm_members_user_idx ON farm_members (user_id);
+    CREATE TABLE IF NOT EXISTS farm_invites (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      farm_id INTEGER NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
+      code TEXT NOT NULL UNIQUE,
+      role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin','user')),
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      used_at TIMESTAMPTZ
+    );
+    ALTER TABLE cattle ADD COLUMN IF NOT EXISTS farm_id INTEGER REFERENCES farms(id) ON DELETE CASCADE;
+    CREATE INDEX IF NOT EXISTS cattle_farm_idx ON cattle (farm_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS cattle_farm_tag_key
+      ON cattle (farm_id, lower(tag_number));
+  `);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(727003)');
+    const { rows } = await client.query(`
+      SELECT id, email, role FROM users u
+      WHERE NOT EXISTS (SELECT 1 FROM farm_members m WHERE m.user_id = u.id)
+    `);
+    for (const user of rows) {
+      const name = user.email.split('@')[0].trim().slice(0, 80) || 'Farm';
+      const farm = await client.query('INSERT INTO farms (name) VALUES ($1) RETURNING id', [name]);
+      await client.query(
+        'INSERT INTO farm_members (farm_id, user_id, role) VALUES ($1, $2, $3)',
+        [farm.rows[0].id, user.id, user.role === 'admin' ? 'admin' : 'user']
+      );
+      await client.query(
+        'UPDATE cattle SET farm_id = $1 WHERE owner_id = $2 AND farm_id IS NULL',
+        [farm.rows[0].id, user.id]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+// --- end farms ------------------------------------------------------------------------------
 
 // --- Calving records (feature 07) -----------------------------------------------------------
 // cattle.last_calving_date is kept equal to the newest event's date (NULL when there are none);
@@ -213,10 +283,38 @@ async function weighingSchema() {
 // --- end weight tracking --------------------------------------------------------------------
 
 async function cleanupDemoUsers(hours = 4) {
-  const result = await pool.query(
-    'DELETE FROM users WHERE is_demo AND created_at < now() - make_interval(hours => $1)',
-    [hours]
-  );
-  return result.rowCount;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const expired = await client.query(
+      'SELECT id FROM users WHERE is_demo AND created_at < now() - make_interval(hours => $1)',
+      [hours]
+    );
+    const ids = expired.rows.map((row) => row.id);
+    if (!ids.length) {
+      await client.query('COMMIT');
+      return 0;
+    }
+    // Remove the demo users' farms first (their cattle go with them), then the users. Deleting a
+    // user still cascades to every row they own.
+    await client.query(
+      `DELETE FROM farms f
+       WHERE f.id IN (SELECT farm_id FROM farm_members WHERE user_id = ANY($1::int[]))
+         AND NOT EXISTS (
+           SELECT 1 FROM farm_members m
+           JOIN users u ON u.id = m.user_id
+           WHERE m.farm_id = f.id AND NOT u.is_demo
+         )`,
+      [ids]
+    );
+    const result = await client.query('DELETE FROM users WHERE id = ANY($1::int[])', [ids]);
+    await client.query('COMMIT');
+    return result.rowCount;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 module.exports = { pool, initSchema, cleanupDemoUsers };
