@@ -10,6 +10,13 @@ import { hideErrorBanner, showErrorBanner, showToast } from "./utils/feedback.js
 
 let controller = null;
 let sync = null; // the offline copy and outbox (feature 14); set once in start()
+let authenticated = false;
+let signOutWired = false;
+
+function setAuthReady(ready) {
+  authenticated = Boolean(ready);
+  document.body.classList.toggle("auth-ready", authenticated);
+}
 
 // Asks the server who is signed in. Resolves to { status } on an answer, { unreachable: true }
 // when the server can't be reached, or { problem } with a message for any other failure.
@@ -32,6 +39,7 @@ async function fetchStatus() {
 async function whoAmI() {
   const status = await api("/api/auth/status");
   if (status.authenticated) return status.user.id;
+  setAuthReady(false);
   window.location.replace("/login.html");
   return null;
 }
@@ -40,6 +48,7 @@ async function boot() {
   const { status, unreachable, problem } = await fetchStatus();
 
   if (problem) {
+    setAuthReady(false);
     showErrorBanner(problem, boot);
     return;
   }
@@ -49,6 +58,7 @@ async function boot() {
     // one. The server checks the session again on the first request once it is back.
     const saved = await sync.state().catch(() => null);
     if (!saved?.user || !saved.herdSavedAt) {
+      setAuthReady(false);
       showErrorBanner("Can't reach the server. Check your connection and try again.", boot);
       return;
     }
@@ -56,7 +66,10 @@ async function boot() {
   } else {
     // Any authenticated session (a demo session too) may use the app before the first
     // admin exists; login.html applies the same rule, so the pages cannot loop.
-    if (!status.authenticated) return window.location.replace("/login.html");
+    if (!status.authenticated) {
+      setAuthReady(false);
+      return window.location.replace("/login.html");
+    }
     window.currentUser = status.user;
     applyUserManagementAccess(); // admins only; before anything slower, so the item never lingers
     // A copy left on this device by a different account is removed before anything is shown.
@@ -69,6 +82,8 @@ async function boot() {
     }
   }
 
+  setAuthReady(true);
+  setupSignOut();
   hideErrorBanner();
   applyUserManagementAccess(); // admins only
 
@@ -93,8 +108,12 @@ async function boot() {
 }
 
 function setupSignOut() {
+  if (signOutWired) return;
   const btn = document.getElementById("logout-btn");
-  btn?.addEventListener("click", async () => {
+  if (!btn) return;
+  signOutWired = true;
+  btn.addEventListener("click", async () => {
+    if (!authenticated) return;
     // Signing out removes the herd saved on this device, and with it any change that has not
     // reached the server. Say so before it happens.
     const state = await sync?.state().catch(() => null);
@@ -117,6 +136,7 @@ function setupSignOut() {
       return;
     }
     await sync?.clear().catch((err) => console.error("Couldn't clear the offline copy:", err));
+    setAuthReady(false);
     window.location.replace("/login.html");
   });
 }
@@ -129,7 +149,6 @@ async function start() {
   indicator.renderIndicator(isOnline());
 
   sync = new SyncEngine({ store: await openOfflineStore(), request: api, whoAmI, isOnline });
-  setupSignOut();
   await boot();
 }
 

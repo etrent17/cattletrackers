@@ -27,6 +27,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Keep the default app UI hidden and non-interactive until auth state is verified. */
+body:not(.auth-ready) nav.navbar,
+body:not(.auth-ready) > .container-fluid,
+body:not(.auth-ready) .mobile-bottom-nav,
+body:not(.auth-ready) .mobile-nav-backdrop {
+  display: none !important;
+  pointer-events: none;
+}
+
 /* Login styling lives in login.css; preserve Bootstrap button sizing here. */
 .app-view { display: none; }
 .app-view.active { display: block; }
